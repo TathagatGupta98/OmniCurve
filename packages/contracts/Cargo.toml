@@ -12,5 +12,5 @@ default = ["export-abi"]
 export-abi = ["stylus-sdk/export-abi"]
 
 [dependencies]
-stylus-sdk = { version = "0.10.7", default-features = false, features = ["export-abi"] }
+stylus-sdk = { version = "0.10.7", default-features = false }
 alloy-primitives = { version = "1.6.0", default-features = false }
