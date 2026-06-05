@@ -1,0 +1,26 @@
+{
+  "version": "1",
+  "name": "omnicurve-amm",
+  "abis": {
+    "DistributionAmm": {
+      "path": "../types/abis/distribution_amm.json"
+    },
+    "BinaryRouter": {
+      "path": "../types/abis/binary_router.json"
+    }
+  },
+  "instances": [
+    {
+      "abi": "DistributionAmm",
+      "address": "0xb4f1cf16d4da2c35956706c25fc194c0df14260e",
+      "startBlock": 274151000,
+      "chain": "arbitrum-sepolia"
+    },
+    {
+      "abi": "BinaryRouter",
+      "address": "0x334cec716c70f2aaace00e321ecc67bbe4a01c14",
+      "startBlock": 274151000,
+      "chain": "arbitrum-sepolia"
+    }
+  ]
+}

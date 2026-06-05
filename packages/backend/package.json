@@ -5,9 +5,11 @@
   "dependencies": {
     "@omnicurve/types": "workspace:*",
     "dotenv": "^17.4.2",
-    "viem": "^2.52.2"
+    "graphql": "^16.14.1",
+    "graphql-request": "^7.4.0"
   },
   "scripts": {
-    "start:indexer": "node src/indexer.js"
+    "start:indexer": "node src/server.js",
+    "deploy:subgraph:amm": "goldsky subgraph deploy omnicurve-amm/1.0.2 --from-abi ./goldsky-amm.json"
   }
 }
