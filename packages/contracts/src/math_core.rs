@@ -3,6 +3,7 @@ use alloy_primitives::I256;
 const WAD_I128: i128 = 1_000_000_000_000_000_000;
 
 #[inline(always)] fn wad() -> I256 { I256::try_from(WAD_I128).unwrap() }
+#[cfg(test)]
 #[inline(always)] fn half_wad() -> I256 { I256::try_from(500_000_000_000_000_000i128).unwrap() }
 #[inline(always)] fn neg_half_wad() -> I256 { I256::try_from(-500_000_000_000_000_000i128).unwrap() }
 #[inline(always)] fn sqrt_2_wad() -> I256 { I256::try_from(1_414_213_562_373_095_048i128).unwrap() }
@@ -135,6 +136,28 @@ fn clamp_unit(x: I256) -> I256 {
 mod tests {
     use super::*;
 
+    fn wad_value(value: i128) -> I256 {
+        I256::try_from(value).unwrap()
+    }
+
+    #[test]
+    fn test_wad_arithmetic_helpers() {
+        assert_eq!(wad_mul(wad_value(2_000_000_000_000_000_000), wad_value(3_000_000_000_000_000_000)), wad_value(6_000_000_000_000_000_000));
+        assert_eq!(wad_mul(wad_value(-2_000_000_000_000_000_000), wad_value(3_000_000_000_000_000_000)), wad_value(-6_000_000_000_000_000_000));
+        assert_eq!(wad_div(wad_value(6_000_000_000_000_000_000), wad_value(3_000_000_000_000_000_000)), wad_value(2_000_000_000_000_000_000));
+        assert_eq!(wad_div(wad_value(1_000_000_000_000_000_000), I256::ZERO), I256::ZERO);
+        assert_eq!(abs_i256(wad_value(-123_000_000_000_000_000)), wad_value(123_000_000_000_000_000));
+        assert_eq!(abs_i256(wad_value(123_000_000_000_000_000)), wad_value(123_000_000_000_000_000));
+    }
+
+    #[test]
+    fn test_exp_and_invalid_sigma() {
+        assert_eq!(exp_wad(I256::ZERO), wad());
+
+        assert_eq!(gaussian_pdf(I256::ZERO, I256::ZERO, I256::ZERO), I256::ZERO);
+        assert_eq!(gaussian_cdf(I256::ZERO, I256::ZERO, I256::ZERO), I256::ZERO);
+    }
+
     #[test]
     fn test_standard_normal_distribution() {
         let mu = I256::ZERO;
@@ -156,18 +179,49 @@ mod tests {
     }
 
     #[test]
+    fn test_pdf_symmetry_and_peak() {
+        let mu = wad();
+        let sigma = half_wad();
+        let delta = wad_value(250_000_000_000_000_000);
+
+        let left = gaussian_pdf(mu - delta, mu, sigma);
+        let right = gaussian_pdf(mu + delta, mu, sigma);
+        let symmetry_margin = wad_value(1_000_000_000_000_000);
+
+        assert!(abs_i256(left - right) < symmetry_margin, "PDF should be symmetric around mu");
+        assert!(gaussian_pdf(mu, mu, sigma) > left, "PDF should peak at mu");
+    }
+
+    #[test]
+    fn test_cdf_monotonicity_and_complement() {
+        let mu = wad();
+        let sigma = half_wad();
+        let lower = gaussian_cdf(mu - wad_value(250_000_000_000_000_000), mu, sigma);
+        let center = gaussian_cdf(mu, mu, sigma);
+        let upper = gaussian_cdf(mu + wad_value(250_000_000_000_000_000), mu, sigma);
+
+        assert!(lower < center, "CDF should increase as x approaches mu");
+        assert!(center < upper, "CDF should increase as x moves above mu");
+
+        let complement_margin = wad_value(2_000_000_000_000_000);
+        let symmetric_lower = gaussian_cdf(mu - wad_value(500_000_000_000_000_000), mu, sigma);
+        let symmetric_upper = gaussian_cdf(mu + wad_value(500_000_000_000_000_000), mu, sigma);
+        assert!(abs_i256((wad() - symmetric_lower) - symmetric_upper) < complement_margin, "CDF should be close to complementary around mu");
+    }
+
+    #[test]
     fn test_cdf_extremes() {
         let mu = wad();
         let sigma = half_wad();
 
         // Very low target price (-10 sigma)
-        let low_x = mu - wad_mul(I256::try_from(10i128 * WAD_I128).unwrap(), sigma);
+        let low_x = mu - wad_mul(wad_value(10_000_000_000_000_000_000), sigma);
         let cdf_low = gaussian_cdf(low_x, mu, sigma);
-        let margin = I256::try_from(1_000_000_000_000_000i128).unwrap(); // 0.001
+        let margin = wad_value(1_000_000_000_000_000); // 0.001
         assert!(cdf_low < margin, "CDF for very low x should approach 0");
 
         // Very high target price (+10 sigma)
-        let high_x = mu + wad_mul(I256::try_from(10i128 * WAD_I128).unwrap(), sigma);
+        let high_x = mu + wad_mul(wad_value(10_000_000_000_000_000_000), sigma);
         let cdf_high = gaussian_cdf(high_x, mu, sigma);
         let diff_high = abs_i256(wad() - cdf_high);
         assert!(diff_high < margin, "CDF for very high x should approach 1, got {}", cdf_high);

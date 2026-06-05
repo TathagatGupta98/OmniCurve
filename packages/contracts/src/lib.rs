@@ -1,3 +1,5 @@
+#![allow(unexpected_cfgs)]
+
 pub mod math_core;
 pub mod distribution_amm;
 // pub mod binary_router;

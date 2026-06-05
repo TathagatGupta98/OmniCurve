@@ -77,3 +77,33 @@ fn l2_distance(target_mu: I256, target_sigma: I256, global_mu: I256, global_sigm
     }
     l2
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn wad_value(value: i128) -> I256 {
+        I256::try_from(value).unwrap()
+    }
+
+    #[test]
+    fn l2_distance_is_zero_for_identical_distributions() {
+        let mu = wad_value(1_000_000_000_000_000_000);
+        let sigma = wad_value(2_000_000_000_000_000_000);
+
+        assert_eq!(l2_distance(mu, sigma, mu, sigma), I256::ZERO);
+    }
+
+    #[test]
+    fn l2_distance_is_bounded_and_grows_with_difference() {
+        let mu = I256::ZERO;
+        let sigma = wad_value(1_000_000_000_000_000_000);
+
+        let nearby = l2_distance(mu, sigma, mu, sigma + wad_value(250_000_000_000_000_000));
+        let far = l2_distance(mu + wad_value(4_000_000_000_000_000_000), sigma, mu, sigma);
+
+        assert!(nearby > I256::ZERO, "Nearby distributions should still have measurable distance");
+        assert!(far <= wad_value(1_000_000_000_000_000_000), "Distance should be capped at one wad");
+        assert!(far > nearby, "Greater separation should increase the distance");
+    }
+}
