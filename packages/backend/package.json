@@ -3,6 +3,11 @@
   "version": "0.0.0",
   "private": true,
   "dependencies": {
-    "@omnicurve/types": "workspace:*"
+    "@omnicurve/types": "workspace:*",
+    "dotenv": "^17.4.2",
+    "viem": "^2.52.2"
+  },
+  "scripts": {
+    "start:indexer": "node src/indexer.js"
   }
 }
