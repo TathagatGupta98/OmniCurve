@@ -1,12 +1,13 @@
 #![allow(unexpected_cfgs)]
 
 pub mod math_core;
-pub mod distribution_amm;
-pub mod binary_router;
 pub mod interfaces;
-pub mod factory;
 
-// NOTE: To export the ABI for a specific contract using `cargo stylus export-abi`,
-// only one contract can have a public entrypoint exported in `src/main.rs`.
-// Modify `src/main.rs` to point to `distribution_amm::print_from_args()` 
-// or `binary_router::print_from_args()` depending on which ABI you want to export.
+#[cfg(any(feature = "amm", not(any(feature = "router", feature = "factory"))))]
+pub mod distribution_amm;
+
+#[cfg(any(feature = "router", not(any(feature = "amm", feature = "factory"))))]
+pub mod binary_router;
+
+#[cfg(feature = "factory")]
+pub mod factory;

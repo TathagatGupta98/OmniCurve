@@ -1,8 +1,20 @@
+cargo-features = ["panic-immediate-abort"]
+
 [package]
 name = "omnicurve-contracts"
 version = "0.0.0"
 edition = "2021"
 publish = false
+
+[profile.release]
+codegen-units = 1
+strip = true
+lto = true
+opt-level = "s"
+panic = "immediate-abort"
+
+[profile.dev]
+panic = "immediate-abort"
 
 [lib]
 crate-type = ["cdylib", "rlib"]
@@ -10,6 +22,9 @@ crate-type = ["cdylib", "rlib"]
 [features]
 default = []
 export-abi = ["stylus-sdk/export-abi"]
+amm = []
+router = []
+factory = []
 
 [dependencies]
 stylus-sdk = { version = "0.10.7", default-features = false }
