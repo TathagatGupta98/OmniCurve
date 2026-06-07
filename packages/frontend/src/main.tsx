@@ -18,7 +18,7 @@ import {
 
 const config = getDefaultConfig({
   appName: 'OmniCurve',
-  projectId: 'YOUR_PROJECT_ID', // Required by WalletConnect, but acceptable as placeholder for local dev without WC enabled fully.
+  projectId: 'c330e7cdb85f6e3c880155b55de5b602', // Valid 32-character hex string to prevent WalletConnect SDK crash
   chains: [arbitrumSepolia],
   ssr: false,
 });

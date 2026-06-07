@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { useWriteContract, useWaitForTransactionReceipt } from 'wagmi';
-import { parseUnits } from 'viem';
-import { BINARY_ROUTER_ABI, CONTRACTS } from '../config/abis';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useWriteContract, useWaitForTransactionReceipt, useReadContract, useAccount } from 'wagmi';
+import { parseUnits, maxUint256 } from 'viem';
+import { BINARY_ROUTER_ABI, CONTRACTS, ERC20_ABI } from '../config/abis';
 import axios from 'axios';
 
 const API_URL = 'http://localhost:3001';
@@ -17,8 +17,45 @@ const StakerPanel: React.FC<StakerPanelProps> = ({ marketId, onXChange }) => {
   const [direction, setDirection] = useState<'ABOVE' | 'BELOW'>('ABOVE');
   const [expectedPrices, setExpectedPrices] = useState<{ pYes: number; pNo: number } | null>(null);
 
-  const { writeContract, data: hash, isPending } = useWriteContract();
-  const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({ hash });
+  const { address } = useAccount();
+
+  // Check USDC Allowance for the ROUTER (since the Router pulls USDC via transferFrom)
+  const { data: allowanceData, refetch: refetchAllowance } = useReadContract({
+    address: CONTRACTS.USDC,
+    abi: ERC20_ABI,
+    functionName: 'allowance',
+    args: address ? [address, CONTRACTS.BINARY_ROUTER] : undefined,
+    query: {
+      enabled: !!address,
+    }
+  });
+
+  // The Router internally calculates the actual USDC cost (premium + fee).
+  // We can't know the exact cost ahead of time from the frontend,
+  // so we approve a generous amount and let the contract pull what it needs.
+  const needsApproval = useMemo(() => {
+    if (!amount || allowanceData === undefined) return false;
+    try {
+      // Approve enough: the max the router could pull is roughly the full amount
+      const needed = parseUnits(amount, 6);
+      return (allowanceData as bigint) < needed;
+    } catch {
+      return false;
+    }
+  }, [amount, allowanceData]);
+
+  // Contract Writes
+  const { writeContract: writeApprove, data: hashApprove, isPending: isPendingApprove } = useWriteContract();
+  const { writeContract: writeTrade, data: hashTrade, isPending: isPendingTrade } = useWriteContract();
+
+  const { isLoading: isConfirmingApprove, isSuccess: isSuccessApprove } = useWaitForTransactionReceipt({ hash: hashApprove });
+  const { isLoading: isConfirmingTrade, isSuccess: isSuccessTrade } = useWaitForTransactionReceipt({ hash: hashTrade });
+
+  useEffect(() => {
+    if (isSuccessApprove) {
+      refetchAllowance();
+    }
+  }, [isSuccessApprove, refetchAllowance]);
 
   // Fetch optimistic prices when X changes (debounced)
   useEffect(() => {
@@ -42,16 +79,33 @@ const StakerPanel: React.FC<StakerPanelProps> = ({ marketId, onXChange }) => {
     return () => clearTimeout(timeoutId);
   }, [xVal, marketId, onXChange]);
 
+  const handleApprove = () => {
+    if (!amount) return;
+    // Approve max uint256 so user doesn't need to re-approve for every trade
+    writeApprove({
+      address: CONTRACTS.USDC,
+      abi: ERC20_ABI,
+      functionName: 'approve',
+      args: [CONTRACTS.BINARY_ROUTER, maxUint256],
+    });
+  };
+
   const handleStake = async () => {
-    if (!xVal || !amount) return;
+    if (!xVal || !amount || needsApproval) return;
     
-    // Note: In reality, we should check/approve USDC first.
-    // For this MVP UI test, we execute the Router trade.
-    writeContract({
+    // target_price: scale to 15 decimals (contract uses I256 with 1e15 precision for prices)
+    const scaledX = parseUnits(xVal, 15);
+
+    // amount_wad: this is the POSITION SIZE in 18-decimal WAD.
+    // The Router computes cost = price * amount_wad / 1e18, then divides by 1e12 for USDC.
+    // So if user enters "1" meaning 1 USDC worth of position, amount_wad = 1e18.
+    const amountWad = parseUnits(amount, 18);
+
+    writeTrade({
       address: CONTRACTS.BINARY_ROUTER,
       abi: BINARY_ROUTER_ABI,
       functionName: direction === 'ABOVE' ? 'buyYes' : 'buyNo',
-      args: [BigInt(Math.floor(Number(xVal))), parseUnits(amount, 6)], // Assuming USDC uses 6 decimals and X is scaled locally
+      args: [scaledX, amountWad],
     });
   };
 
@@ -118,15 +172,25 @@ const StakerPanel: React.FC<StakerPanelProps> = ({ marketId, onXChange }) => {
         />
       </div>
 
-      <button 
-        className="w-full py-4 rounded-lg font-bold text-lg text-white bg-indigo-600 hover:bg-indigo-500 transition-colors shadow-lg shadow-indigo-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
-        onClick={handleStake}
-        disabled={isPending || isConfirming || !xVal || !amount}
-      >
-        {isPending ? 'Confirm in Wallet...' : isConfirming ? 'Transaction Pending...' : 'Execute Trade'}
-      </button>
+      {needsApproval ? (
+        <button 
+          className="w-full py-4 rounded-lg font-bold text-lg text-white bg-blue-600 hover:bg-blue-500 transition-colors shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={handleApprove}
+          disabled={isPendingApprove || isConfirmingApprove || !amount}
+        >
+          {isPendingApprove ? 'Confirm in Wallet...' : isConfirmingApprove ? 'Approving...' : 'Approve USDC'}
+        </button>
+      ) : (
+        <button 
+          className="w-full py-4 rounded-lg font-bold text-lg text-white bg-indigo-600 hover:bg-indigo-500 transition-colors shadow-lg shadow-indigo-900/20 disabled:opacity-50 disabled:cursor-not-allowed"
+          onClick={handleStake}
+          disabled={isPendingTrade || isConfirmingTrade || !xVal || !amount}
+        >
+          {isPendingTrade ? 'Confirm in Wallet...' : isConfirmingTrade ? 'Transaction Pending...' : 'Execute Trade'}
+        </button>
+      )}
 
-      {isSuccess && (
+      {isSuccessTrade && (
         <div className="p-3 bg-emerald-900/30 border border-emerald-800 text-emerald-400 rounded-lg text-center text-sm">
           Transaction Confirmed! Goldsky webhook is processing your trade...
         </div>
