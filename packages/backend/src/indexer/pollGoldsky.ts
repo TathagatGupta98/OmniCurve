@@ -1,73 +1,70 @@
-import { GraphQLClient, gql } from 'graphql-request';
-import * as indexerService from '../services/indexerService';
+import { createPublicClient, http, formatUnits, getAddress } from 'viem';
+import { arbitrumSepolia } from 'viem/chains';
+import prisma from '../models/db';
+import { broadcastMarketUpdate } from '../sockets/socketManager';
 
-const GOLDSKY_GRAPHQL_ENDPOINT = process.env.GOLDSKY_GRAPHQL_ENDPOINT;
 const MARKET_ID = '0x1234567890abcdef'; // The mock market ID for UI test
+const AMM_ADDRESS = getAddress('0x362d19969BF76805b684d6f5FB0B9fE33e4e439D');
+const USDC_ADDRESS = '0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d' as const;
 
-const GET_LATEST_EVENTS = gql`
-  query GetLatestEvents($timestamp: BigInt!) {
-    curveUpdateds(first: 5, orderBy: timestamp_, orderDirection: asc, where: { timestamp__gt: $timestamp }) {
-      new_mu
-      new_sigma
-      timestamp_
-      transactionHash_
-    }
-    tradeExecuteds(first: 5, orderBy: timestamp_, orderDirection: asc, where: { timestamp__gt: $timestamp }) {
-      user
-      target_price
-      is_yes
-      timestamp_
-      transactionHash_
-    }
-  }
-`;
+const AMM_ABI = [
+  { inputs: [], name: 'globalMu', outputs: [{ type: 'int256' }], stateMutability: 'view', type: 'function' },
+  { inputs: [], name: 'globalSigma', outputs: [{ type: 'int256' }], stateMutability: 'view', type: 'function' }
+] as const;
 
-let lastProcessedTimestamp = Math.floor(Date.now() / 1000).toString();
+const ERC20_ABI = [
+  { inputs: [{ name: 'account', type: 'address' }], name: 'balanceOf', outputs: [{ type: 'uint256' }], stateMutability: 'view', type: 'function' }
+] as const;
 
 export const startGoldskyPolling = () => {
-  if (!GOLDSKY_GRAPHQL_ENDPOINT) {
-    console.warn('GOLDSKY_GRAPHQL_ENDPOINT not set. Polling disabled.');
-    return;
-  }
+  console.log('📡 Starting Direct On-Chain Polling Service (Bypassing Goldsky)...');
 
-  const client = new GraphQLClient(GOLDSKY_GRAPHQL_ENDPOINT);
+  const client = createPublicClient({
+    chain: arbitrumSepolia,
+    transport: http()
+  });
 
-  console.log('📡 Starting Goldsky GraphQL Polling Service...');
+  let lastMu: number | null = null;
+  let lastSigma: number | null = null;
+  let lastLiquidity: number | null = null;
 
   setInterval(async () => {
     try {
-      const data: any = await client.request(GET_LATEST_EVENTS, { timestamp: lastProcessedTimestamp });
+      const [muData, sigmaData, usdcBalance] = await Promise.all([
+        client.readContract({ address: AMM_ADDRESS, abi: AMM_ABI, functionName: 'globalMu' }),
+        client.readContract({ address: AMM_ADDRESS, abi: AMM_ABI, functionName: 'globalSigma' }),
+        client.readContract({ address: USDC_ADDRESS, abi: ERC20_ABI, functionName: 'balanceOf', args: [AMM_ADDRESS] })
+      ]);
 
-      // Process CurveUpdates (Liquidity or Market State changes)
-      for (const curve of data.curveUpdateds || []) {
-        console.log('🔄 New Curve Update detected on-chain!', curve);
-        await indexerService.handleLiquidityAdded({
-          marketId: MARKET_ID,
-          userAddress: '0x0', // Fallback
-          newMu: Number(curve.new_mu) / 1e15,
-          newSigma: Number(curve.new_sigma) / 1e15,
-          addedLiquidity: 1000 // Dummy value if subgraph lacks it
+      const mu = Number(muData) / 1e15;
+      const sigma = Number(sigmaData) / 1e15;
+      const liquidity = Number(formatUnits(usdcBalance as bigint, 6)); // USDC has 6 decimals
+
+      // Only update if something changed
+      if (mu !== lastMu || sigma !== lastSigma || liquidity !== lastLiquidity) {
+        console.log(`🔄 On-chain update detected! Mu: ${mu}, Sigma: ${sigma}, Liquidity: ${liquidity}`);
+        
+        await prisma.market.update({
+          where: { marketId: MARKET_ID },
+          data: {
+            currentMu: mu,
+            currentSigma: sigma,
+            totalLiquidity: liquidity
+          }
         });
-        lastProcessedTimestamp = curve.timestamp_;
-      }
 
-      // Process Trades
-      for (const trade of data.tradeExecuteds || []) {
-        console.log('🔄 New Trade detected on-chain!', trade);
-        await indexerService.handleStakePlaced({
-          positionId: trade.transactionHash_,
-          marketId: MARKET_ID,
-          userAddress: trade.user,
-          targetValueX: Number(trade.target_price) / 1e15,
-          isYes: trade.is_yes,
-          tokensMinted: 100, // Dummy
-          stakeAmount: 100 // Dummy
+        broadcastMarketUpdate(MARKET_ID, {
+          currentMu: mu,
+          currentSigma: sigma,
+          totalLiquidity: liquidity
         });
-        lastProcessedTimestamp = trade.timestamp_;
-      }
 
+        lastMu = mu;
+        lastSigma = sigma;
+        lastLiquidity = liquidity;
+      }
     } catch (error) {
-      console.error('Error polling Goldsky GraphQL:', error);
+      console.error('Error polling on-chain data:', error);
     }
   }, 3000); // Poll every 3 seconds
 };

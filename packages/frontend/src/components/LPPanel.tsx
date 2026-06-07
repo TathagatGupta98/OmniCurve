@@ -42,8 +42,8 @@ const LPPanel: React.FC<LPPanelProps> = ({ currentMu, currentSigma }) => {
   const needsApproval = allowanceData !== undefined && (allowanceData as bigint) < parsedAmountUsdc;
 
   // Contract Writes
-  const { writeContract: writeApprove, data: hashApprove, isPending: isPendingApprove } = useWriteContract();
-  const { writeContract: writeAdd, data: hashAdd, isPending: isPendingAdd } = useWriteContract();
+  const { writeContract: writeApprove, data: hashApprove, isPending: isPendingApprove, error: errorApprove } = useWriteContract();
+  const { writeContract: writeAdd, data: hashAdd, isPending: isPendingAdd, error: errorAdd } = useWriteContract();
 
   const { isLoading: isConfirmingApprove, isSuccess: isSuccessApprove } = useWaitForTransactionReceipt({ hash: hashApprove });
   const { isLoading: isConfirmingAdd, isSuccess: isSuccessAdd } = useWaitForTransactionReceipt({ hash: hashAdd });
@@ -56,12 +56,13 @@ const LPPanel: React.FC<LPPanelProps> = ({ currentMu, currentSigma }) => {
 
   const handleApprove = () => {
     if (!amount) return;
-    // Approve max so user doesn't need to re-approve
     writeApprove({
       address: CONTRACTS.USDC,
       abi: ERC20_ABI,
       functionName: 'approve',
-      args: [CONTRACTS.DISTRIBUTION_AMM, maxUint256],
+      args: [CONTRACTS.DISTRIBUTION_AMM, parsedAmountUsdc],
+      maxFeePerGas: 100000000n, // 0.1 gwei padding
+      maxPriorityFeePerGas: 0n,
     } as any);
   };
 
@@ -75,6 +76,8 @@ const LPPanel: React.FC<LPPanelProps> = ({ currentMu, currentSigma }) => {
       abi: DISTRIBUTION_AMM_ABI,
       functionName: 'addLiquidity',
       args: [parseUnits(amount, 18), parseUnits(targetMu, 15), parseUnits(targetSigma, 15)],
+      maxFeePerGas: 100000000n, // 0.1 gwei padding
+      maxPriorityFeePerGas: 0n,
     } as any);
   };
 
@@ -139,6 +142,12 @@ const LPPanel: React.FC<LPPanelProps> = ({ currentMu, currentSigma }) => {
       {isSuccessAdd && (
         <div className="p-3 bg-emerald-900/30 border border-emerald-800 text-emerald-400 rounded-lg text-center text-sm">
           Liquidity successfully added! Goldsky webhook is syncing...
+        </div>
+      )}
+
+      {(errorApprove || errorAdd) && (
+        <div className="p-3 bg-red-900/30 border border-red-800 text-red-400 rounded-lg text-sm overflow-auto max-h-40">
+          <strong>Error:</strong> {errorApprove?.message || errorAdd?.message}
         </div>
       )}
     </div>

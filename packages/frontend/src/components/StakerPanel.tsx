@@ -36,8 +36,9 @@ const StakerPanel: React.FC<StakerPanelProps> = ({ marketId, onXChange }) => {
   const needsApproval = useMemo(() => {
     if (!amount || allowanceData === undefined) return false;
     try {
-      // Approve enough: the max the router could pull is roughly the full amount
-      const needed = parseUnits(amount, 6);
+      // Approve enough: the max the router could pull is roughly the full amount + 1% fee.
+      // We add a 5% buffer to be completely safe against rounding.
+      const needed = parseUnits((Number(amount) * 1.05).toFixed(6), 6);
       return (allowanceData as bigint) < needed;
     } catch {
       return false;
@@ -45,8 +46,8 @@ const StakerPanel: React.FC<StakerPanelProps> = ({ marketId, onXChange }) => {
   }, [amount, allowanceData]);
 
   // Contract Writes
-  const { writeContract: writeApprove, data: hashApprove, isPending: isPendingApprove } = useWriteContract();
-  const { writeContract: writeTrade, data: hashTrade, isPending: isPendingTrade } = useWriteContract();
+  const { writeContract: writeApprove, data: hashApprove, isPending: isPendingApprove, error: errorApprove } = useWriteContract();
+  const { writeContract: writeTrade, data: hashTrade, isPending: isPendingTrade, error: errorTrade } = useWriteContract();
 
   const { isLoading: isConfirmingApprove, isSuccess: isSuccessApprove } = useWaitForTransactionReceipt({ hash: hashApprove });
   const { isLoading: isConfirmingTrade, isSuccess: isSuccessTrade } = useWaitForTransactionReceipt({ hash: hashTrade });
@@ -81,12 +82,15 @@ const StakerPanel: React.FC<StakerPanelProps> = ({ marketId, onXChange }) => {
 
   const handleApprove = () => {
     if (!amount) return;
-    // Approve max uint256 so user doesn't need to re-approve for every trade
+    // Approve exactly the needed amount + 5% buffer to cover fees
+    const needed = parseUnits((Number(amount) * 1.05).toFixed(6), 6);
     writeApprove({
       address: CONTRACTS.USDC,
       abi: ERC20_ABI,
       functionName: 'approve',
-      args: [CONTRACTS.BINARY_ROUTER, maxUint256],
+      args: [CONTRACTS.BINARY_ROUTER, needed],
+      maxFeePerGas: 100000000n, // 0.1 gwei padding
+      maxPriorityFeePerGas: 0n,
     } as any);
   };
 
@@ -106,6 +110,8 @@ const StakerPanel: React.FC<StakerPanelProps> = ({ marketId, onXChange }) => {
       abi: BINARY_ROUTER_ABI,
       functionName: direction === 'ABOVE' ? 'buyYes' : 'buyNo',
       args: [scaledX, amountWad],
+      maxFeePerGas: 100000000n, // 0.1 gwei padding
+      maxPriorityFeePerGas: 0n,
     } as any);
   };
 
@@ -193,6 +199,12 @@ const StakerPanel: React.FC<StakerPanelProps> = ({ marketId, onXChange }) => {
       {isSuccessTrade && (
         <div className="p-3 bg-emerald-900/30 border border-emerald-800 text-emerald-400 rounded-lg text-center text-sm">
           Transaction Confirmed! Goldsky webhook is processing your trade...
+        </div>
+      )}
+
+      {(errorApprove || errorTrade) && (
+        <div className="p-3 bg-red-900/30 border border-red-800 text-red-400 rounded-lg text-sm overflow-auto max-h-40">
+          <strong>Error:</strong> {errorApprove?.message || errorTrade?.message}
         </div>
       )}
     </div>
