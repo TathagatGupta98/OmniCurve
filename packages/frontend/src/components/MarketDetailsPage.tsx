@@ -53,8 +53,8 @@ const MarketDetailsPage = () => {
       {/* Header Info */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
-          <h1 className="text-3xl font-bold">{marketData.title}</h1>
-          <p className="text-zinc-400">{marketData.category} Market</p>
+          <h1 className="text-4xl font-extrabold !text-white !mb-2 !mt-0">{marketData.title}</h1>
+          <p className="text-lg text-zinc-400">{marketData.category} Market</p>
         </div>
         <div className="flex gap-4 bg-zinc-900 p-4 rounded-lg border border-zinc-800">
           <div>

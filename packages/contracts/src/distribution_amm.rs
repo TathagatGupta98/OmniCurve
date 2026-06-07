@@ -267,6 +267,24 @@ impl DistributionAmm {
         let current_tl = tl.get();
         tl.set(current_tl + liability_i256);
         
+        let old_mu = self.global_mu.get();
+        let old_sigma = self.global_sigma.get();
+        let total_liq = pre_liquidity + self.locked_collateral.get();
+        
+        if total_liq > I256::ZERO && old_sigma > I256::ZERO {
+            let shift_factor = (liability_i256 * wad()) / total_liq;
+            let shift_amount = (shift_factor * old_sigma) / (I256::try_from(10).unwrap() * wad());
+            
+            let new_mu = if token_id == U256::from(1) {
+                old_mu + shift_amount
+            } else {
+                old_mu - shift_amount
+            };
+            
+            self.global_mu.set(new_mu);
+            self.vm().log(CurveUpdated { new_mu: to_u256(new_mu), new_sigma: to_u256(old_sigma) });
+        }
+        
         Ok(())
     }
 

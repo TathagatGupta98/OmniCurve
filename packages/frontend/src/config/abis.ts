@@ -29,7 +29,7 @@ export const DISTRIBUTION_AMM_ABI = [{"inputs":[],"name":"acceptOwnership","outp
 // Addresses from backend .env or hardcoded for testnet
 export const CONTRACTS = {
   BINARY_ROUTER: '0x1d3d7c750453AF93eD496dF90DcA4A540A5E36D7' as `0x${string}`,
-  DISTRIBUTION_AMM: '0x362d19969BF76805b684d6f5FB0B9fE33e4e439D' as `0x${string}`,
+  DISTRIBUTION_AMM: '0xB80051AD3F5C1678424D2C7B8Fb9f9776a701942' as `0x${string}`,
   FACTORY: '0x872f2aac62bd05fa33de5ba5260482e3ca59bd05' as `0x${string}`,
   USDC: '0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d' as `0x${string}`,
 } as const;

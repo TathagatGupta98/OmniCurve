@@ -40,8 +40,8 @@ const DistributionGraph: React.FC<DistributionGraphProps> = ({ mu, sigma, target
   }, [mu, sigma]);
 
   return (
-    <div className="w-full h-80 bg-zinc-900 rounded-xl p-4 border border-zinc-800 shadow-lg">
-      <ResponsiveContainer width="100%" height="100%">
+    <div className="w-full h-80 bg-zinc-900 rounded-xl p-4 border border-zinc-800 shadow-lg" style={{ minHeight: '320px' }}>
+      <ResponsiveContainer width="100%" height="100%" minHeight={320}>
         <AreaChart data={data} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
           <defs>
             <linearGradient id="colorY" x1="0" y1="0" x2="0" y2="1">
@@ -58,7 +58,13 @@ const DistributionGraph: React.FC<DistributionGraphProps> = ({ mu, sigma, target
             type="number"
             tickFormatter={(val) => val.toFixed(0)}
           />
-          <YAxis hide domain={['auto', 'auto']} />
+          <YAxis 
+            domain={['auto', 'auto']} 
+            stroke="#a1a1aa"
+            tick={{ fill: '#a1a1aa' }}
+            tickFormatter={(val) => val.toFixed(4)}
+            width={80}
+          />
           <Tooltip 
             contentStyle={{ backgroundColor: '#18181b', borderColor: '#27272a', color: '#f8fafc' }}
             itemStyle={{ color: '#818cf8' }}

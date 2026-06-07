@@ -61,8 +61,8 @@ const LPPanel: React.FC<LPPanelProps> = ({ currentMu, currentSigma }) => {
       abi: ERC20_ABI,
       functionName: 'approve',
       args: [CONTRACTS.DISTRIBUTION_AMM, parsedAmountUsdc],
-      maxFeePerGas: 100000000n, // 0.1 gwei padding
-      maxPriorityFeePerGas: 0n,
+      gasPrice: 100000000n, // 0.1 gwei legacy gas price to force MetaMask to respect the override
+      gas: 1000000n, // Hardcode gas limit to bypass viem/RPC estimation issues
     } as any);
   };
 
@@ -76,8 +76,8 @@ const LPPanel: React.FC<LPPanelProps> = ({ currentMu, currentSigma }) => {
       abi: DISTRIBUTION_AMM_ABI,
       functionName: 'addLiquidity',
       args: [parseUnits(amount, 18), parseUnits(targetMu, 15), parseUnits(targetSigma, 15)],
-      maxFeePerGas: 100000000n, // 0.1 gwei padding
-      maxPriorityFeePerGas: 0n,
+      gasPrice: 100000000n, // 0.1 gwei legacy gas price to force MetaMask to respect the override
+      gas: 1000000n, // Hardcode gas limit to bypass viem/RPC estimation issues
     } as any);
   };
 

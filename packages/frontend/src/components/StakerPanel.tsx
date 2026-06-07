@@ -89,8 +89,8 @@ const StakerPanel: React.FC<StakerPanelProps> = ({ marketId, onXChange }) => {
       abi: ERC20_ABI,
       functionName: 'approve',
       args: [CONTRACTS.BINARY_ROUTER, needed],
-      maxFeePerGas: 100000000n, // 0.1 gwei padding
-      maxPriorityFeePerGas: 0n,
+      gasPrice: 100000000n, // 0.1 gwei legacy gas price to force MetaMask to respect the override
+      gas: 1000000n,
     } as any);
   };
 
@@ -110,8 +110,8 @@ const StakerPanel: React.FC<StakerPanelProps> = ({ marketId, onXChange }) => {
       abi: BINARY_ROUTER_ABI,
       functionName: direction === 'ABOVE' ? 'buyYes' : 'buyNo',
       args: [scaledX, amountWad],
-      maxFeePerGas: 100000000n, // 0.1 gwei padding
-      maxPriorityFeePerGas: 0n,
+      gasPrice: 100000000n, // 0.1 gwei legacy gas price to force MetaMask to respect the override
+      gas: 1000000n, // Hardcode gas limit to bypass viem/RPC estimation issues
     } as any);
   };
 

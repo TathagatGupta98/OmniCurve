@@ -4,7 +4,7 @@ import prisma from '../models/db';
 import { broadcastMarketUpdate } from '../sockets/socketManager';
 
 const MARKET_ID = '0x1234567890abcdef'; // The mock market ID for UI test
-const AMM_ADDRESS = getAddress('0x362d19969BF76805b684d6f5FB0B9fE33e4e439D');
+const AMM_ADDRESS = getAddress('0xB80051AD3F5C1678424D2C7B8Fb9f9776a701942');
 const USDC_ADDRESS = '0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d' as const;
 
 const AMM_ABI = [
