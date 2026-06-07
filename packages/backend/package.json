@@ -9,13 +9,22 @@
     "express": "^5.2.1",
     "graphql": "^16.14.1",
     "graphql-request": "^7.4.0",
+    "helmet": "^8.2.0",
+    "socket.io": "^4.8.3",
     "viem": "^2.52.2",
     "ws": "^8.21.0"
   },
   "scripts": {
-    "start:indexer": "node src/indexer/indexer.js",
+    "start:indexer": "tsx src/indexer/indexer.ts",
     "deploy:subgraph:amm": "goldsky subgraph deploy omnicurve-amm/1.0.2 --from-abi ./goldsky-amm.json",
-    "start:api": "node src/server/app.js",
-    "start:ws": "node src/websocket/server.js"
+    "start:api": "tsx src/server.ts",
+    "start:ws": "tsx src/websocket/server.ts"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.9.2",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3"
   }
 }
