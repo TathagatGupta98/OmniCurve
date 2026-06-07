@@ -8,6 +8,7 @@ import marketRoutes from './routes/marketRoutes';
 import webhookRoutes from './webhooks/goldskyHandler';
 import { errorHandler } from './middlewares/errorHandler';
 import { initializeSocket } from './sockets/socketManager';
+import { startGoldskyPolling } from './indexer/pollGoldsky';
 
 dotenv.config();
 
@@ -36,6 +37,9 @@ app.use(errorHandler);
 
 const httpServer = createServer(app);
 initializeSocket(httpServer);
+
+// Start GraphQL Indexer Polling
+startGoldskyPolling();
 
 httpServer.listen(port, () => {
   console.log(`Server is running on port ${port}`);

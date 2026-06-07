@@ -4,7 +4,9 @@
   "private": true,
   "dependencies": {
     "@omnicurve/types": "workspace:*",
+    "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
+    "@types/pg": "^8.20.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
@@ -12,11 +14,13 @@
     "graphql-request": "^7.4.0",
     "helmet": "^8.2.0",
     "jstat": "^1.9.6",
+    "pg": "^8.21.0",
     "socket.io": "^4.8.3",
     "viem": "^2.52.2",
     "ws": "^8.21.0"
   },
   "scripts": {
+    "dev": "tsx watch src/server.ts",
     "start:indexer": "tsx src/indexer/indexer.ts",
     "deploy:subgraph:amm": "goldsky subgraph deploy omnicurve-amm/1.0.2 --from-abi ./goldsky-amm.json",
     "start:api": "tsx src/server.ts",
@@ -29,5 +33,8 @@
     "prisma": "^7.8.0",
     "tsx": "^4.22.4",
     "typescript": "^6.0.3"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   }
 }
