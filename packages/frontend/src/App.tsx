@@ -12,7 +12,7 @@ function App() {
           <ConnectButton />
         </div>
       </header>
-      <main className="container mx-auto p-4 md:p-8">
+      <main className="w-full px-4 md:px-8">
         <MarketDetailsPage />
       </main>
     </div>

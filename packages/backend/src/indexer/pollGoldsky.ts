@@ -44,8 +44,8 @@ export const startGoldskyPolling = () => {
         await indexerService.handleLiquidityAdded({
           marketId: MARKET_ID,
           userAddress: '0x0', // Fallback
-          newMu: Number(curve.new_mu),
-          newSigma: Number(curve.new_sigma),
+          newMu: Number(curve.new_mu) / 1e18,
+          newSigma: Number(curve.new_sigma) / 1e18,
           addedLiquidity: 1000 // Dummy value if subgraph lacks it
         });
         lastProcessedTimestamp = curve.timestamp_;
@@ -58,7 +58,7 @@ export const startGoldskyPolling = () => {
           positionId: trade.transactionHash_,
           marketId: MARKET_ID,
           userAddress: trade.user,
-          targetValueX: Number(trade.target_price),
+          targetValueX: Number(trade.target_price) / 1e18,
           isYes: trade.is_yes,
           tokensMinted: 100, // Dummy
           stakeAmount: 100 // Dummy
