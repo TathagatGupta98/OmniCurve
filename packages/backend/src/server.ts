@@ -1,11 +1,13 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import { createServer } from 'http';
 import dotenv from 'dotenv';
 import healthRoutes from './routes/health';
 import marketRoutes from './routes/marketRoutes';
 import webhookRoutes from './webhooks/goldskyHandler';
 import { errorHandler } from './middlewares/errorHandler';
+import { initializeSocket } from './sockets/socketManager';
 
 dotenv.config();
 
@@ -32,6 +34,9 @@ app.use('/api/webhooks', webhookRoutes);
 // Global Error Handler
 app.use(errorHandler);
 
-app.listen(port, () => {
+const httpServer = createServer(app);
+initializeSocket(httpServer);
+
+httpServer.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });

@@ -1,5 +1,6 @@
 import prisma from '../models/db';
 import { Direction } from '@prisma/client';
+import { broadcastMarketUpdate } from '../sockets/socketManager';
 
 export const handleLiquidityAdded = async (data: any) => {
   const { marketId, userAddress, newMu, newSigma, addedLiquidity } = data;
@@ -23,6 +24,12 @@ export const handleLiquidityAdded = async (data: any) => {
       totalLiquidityProvided: addedLiquidity,
       rolePreference: 'LP',
     },
+  });
+
+  broadcastMarketUpdate(marketId, {
+    currentMu: market.currentMu,
+    currentSigma: market.currentSigma,
+    totalLiquidity: market.totalLiquidity,
   });
 
   return market;
@@ -79,6 +86,12 @@ export const handleStakePlaced = async (data: any) => {
       globalAccumulatorSnapshot: newAccumulator,
       rolePreference: 'STAKER',
     },
+  });
+
+  broadcastMarketUpdate(marketId, {
+    currentMu: updatedMarket.currentMu,
+    currentSigma: updatedMarket.currentSigma,
+    totalLiquidity: updatedMarket.totalLiquidity,
   });
 
   return updatedMarket;
