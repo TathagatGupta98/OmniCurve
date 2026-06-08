@@ -1,5 +1,6 @@
 // use alloy_sol_types::sol;
 use stylus_sdk::prelude::*;
+use alloc::vec;
 
 sol_interface! {
     interface IERC20 {
@@ -19,8 +20,10 @@ sol_interface! {
 
     interface IProxyRouter {
         function initialize(address owner) external;
+        function setUsdcToken(address token) external;
         function setAmmAddress(address addr) external;
         function transferOwnership(address new_owner) external;
         function acceptOwnership() external;
     }
 }
+

@@ -20,13 +20,14 @@ panic = "abort"
 crate-type = ["cdylib", "rlib"]
 
 [features]
-default = []
+default = ["mini-alloc"]
 export-abi = ["stylus-sdk/export-abi"]
+mini-alloc = ["stylus-sdk/mini-alloc"]
 amm = []
 router = []
 factory = []
 
 [dependencies]
 stylus-sdk = { version = "0.10.7", default-features = false }
-alloy-primitives = { version = "1.6.0", default-features = false }
-alloy-sol-types = { version = "1.6.0", default-features = false }
+alloy-primitives = { version = "1.6.0" }
+alloy-sol-types = { version = "1.6.0" }

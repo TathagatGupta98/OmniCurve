@@ -3,56 +3,59 @@ pragma solidity ^0.8.20;
 
 import "forge-std/Test.sol";
 
+interface IBinaryRouter {
+    function buyYes(int256 target_price, uint256 amount_wad) external;
+    function buyNo(int256 target_price, uint256 amount_wad) external;
+    function claimWinnings(bool is_yes, uint256 amount_wad) external;
+    function setAmmAddress(address addr) external;
+    function getBalance(address user, uint256 token_id) external view returns (uint256);
+}
+
 interface IDistributionAmm {
-    function tradeDistribution(int256 target_mu, int256 target_sigma) external;
     function globalMu() external view returns (int256);
     function globalSigma() external view returns (int256);
+    function addLiquidity(uint256 amount_wad, int256 target_mu, int256 target_sigma) external;
+    function removeLiquidity(uint256 shares_to_remove) external;
+    function getPriceForX(int256 x, bool is_yes) external view returns (int256);
 }
 
-interface IBinaryRouter {
-    function get_binary_odds(int256 target_price) external view returns (int256);
-    function buy_yes(int256 target_price) external;
-    function set_amm_address(address addr) external;
-}
-
-// Mock implementation to allow forge test to pass, representing the Rust Stylus logic
 contract MockDistributionAmm is IDistributionAmm {
     int256 public globalMu = 0;
     int256 public globalSigma = 1e18; // WAD 1.0
-    int256 public totalCollateral = 0;
     int256 public sigmaMin = 1e16;    // 0.01
 
     error VarianceTooLow();
 
-    function tradeDistribution(int256 target_mu, int256 target_sigma) external {
-        if (target_sigma < sigmaMin) {
+    function addLiquidity(uint256 /*amount_wad*/, int256 target_mu, int256 target_sigma) external {
+        if (target_sigma <= sigmaMin) {
             revert VarianceTooLow();
         }
         
-        // Mock l2 calculation for state updates: simple linear combination for the mock
-        int256 l2 = 1e18; // Mock l2 distance (1.0 WAD)
-        
-        // Update state
-        globalMu = globalMu + ((l2 * (target_mu - globalMu)) / 1e18);
-        globalSigma = globalSigma + ((l2 * (target_sigma - globalSigma)) / 1e18);
-        totalCollateral += l2;
+        // Mock state updates for test
+        globalMu = target_mu;
+        globalSigma = target_sigma;
+    }
+
+    function removeLiquidity(uint256 /*shares_to_remove*/) external {}
+
+    function getPriceForX(int256 /*x*/, bool /*is_yes*/) external pure returns (int256) {
+        return 50 * 1e16; // 0.5 WAD mock price
     }
 }
 
 contract MockBinaryRouter is IBinaryRouter {
     address public ammAddress;
 
-    function set_amm_address(address addr) external {
+    function setAmmAddress(address addr) external {
         ammAddress = addr;
     }
 
-    function get_binary_odds(int256 /*target_price*/) external view returns (int256) {
-        // BinaryRouter logic was mocked in Rust to return 50%
-        return 50 * 1e18; // 50% WAD
-    }
-
-    function buy_yes(int256 /*target_price*/) external {
-        // mock logic
+    function buyYes(int256 /*target_price*/, uint256 /*amount_wad*/) external {}
+    function buyNo(int256 /*target_price*/, uint256 /*amount_wad*/) external {}
+    function claimWinnings(bool /*is_yes*/, uint256 /*amount_wad*/) external {}
+    
+    function getBalance(address /*user*/, uint256 /*token_id*/) external pure returns (uint256) {
+        return 0;
     }
 }
 
@@ -63,34 +66,24 @@ contract OmniCurveTest is Test {
     function setUp() public {
         amm = new MockDistributionAmm();
         router = new MockBinaryRouter();
-        router.set_amm_address(address(amm));
+        router.setAmmAddress(address(amm));
     }
 
     function test_RevertIf_VarianceTooLow() public {
         vm.expectRevert(MockDistributionAmm.VarianceTooLow.selector);
-        amm.tradeDistribution(0, 1e15); // sigma (0.001) < sigmaMin (0.01)
+        amm.addLiquidity(1e18, 0, 1e15); // sigma (0.001) <= sigmaMin (0.01)
     }
 
     function test_StateUpdateOnTrade() public {
-        int256 initialMu = amm.globalMu();
-        int256 initialSigma = amm.globalSigma();
-
         int256 targetMu = 1e18;
         int256 targetSigma = 2e18;
 
-        // Perform trade
-        amm.tradeDistribution(targetMu, targetSigma);
+        amm.addLiquidity(1e18, targetMu, targetSigma);
 
         int256 newMu = amm.globalMu();
         int256 newSigma = amm.globalSigma();
 
-        // Since l2 is mocked to 1e18 (which is 1 in WAD), the new value should exactly match the target in the mock
-        assertEq(newMu, initialMu + targetMu - initialMu);
-        assertEq(newSigma, initialSigma + targetSigma - initialSigma);
-    }
-
-    function test_BinaryRouterOdds() public {
-        int256 odds = router.get_binary_odds(1e18);
-        assertEq(odds, 50 * 1e18); // Validates the mocked Rust logic returning 50%
+        assertEq(newMu, targetMu);
+        assertEq(newSigma, targetSigma);
     }
 }

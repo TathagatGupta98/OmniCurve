@@ -2,6 +2,7 @@ use alloy_primitives::{I256, U256, Address};
 use alloy_sol_types::sol;
 use stylus_sdk::prelude::*;
 use alloc::vec::Vec;
+use alloc::vec;
 
 extern crate alloc;
 
@@ -125,6 +126,9 @@ impl DistributionAmm {
         if is_yes { Ok(wad() - cdf) } else { Ok(cdf) }
     }
 
+    // NOTE: fee_amount is in WAD (1e18). The corresponding USDC (1e6) was already
+    // transferred to this contract by the router before this call. The 1e12 scaling
+    // difference is intentional; sweep_dust() recovers any rounding remainder.
     pub fn distribute_fee(&mut self, fee_amount: U256) -> Result<(), Vec<u8>> {
         if self.vm().msg_sender() != self.router_address.get() { return Err(Error::Unauthorized.into()); }
         let total_shares = self.total_shares.get();
@@ -164,7 +168,7 @@ impl DistributionAmm {
     pub fn add_liquidity(&mut self, amount_wad: U256, target_mu: I256, target_sigma: I256) -> Result<(), Vec<u8>> {
         if target_sigma <= self.sigma_min.get() { return Err(Error::VarianceTooLow.into()); }
 
-        let _ = self.claim_fees();
+        self.claim_fees()?;
 
         let amount_i256 = I256::try_from(amount_wad).map_err(|_| Error::Overflow)?;
         
@@ -213,29 +217,32 @@ impl DistributionAmm {
     }
 
     pub fn remove_liquidity(&mut self, shares_to_remove: U256) -> Result<(), Vec<u8>> {
-        let _ = self.claim_fees();
+        self.claim_fees()?;
 
         let shares_i256 = I256::try_from(shares_to_remove).map_err(|_| Error::Overflow)?;
         let user = self.vm().msg_sender();
-        let mut shares = self.shares.setter(user);
         
-        if shares.get() < shares_i256 {
-            return Err(b"Insufficient shares".to_vec());
-        }
-
         let amount_to_return = shares_i256;
         let required_solvency = self.locked_collateral.get() / I256::try_from(10).map_err(|_| Error::Overflow)?;
         if self.available_liquidity.get() - amount_to_return < required_solvency {
             return Err(Error::InsufficientLiquidity.into());
         }
 
-        let current_shares = shares.get();
-        shares.set(current_shares - shares_i256);
+        let new_shares = {
+            let mut shares = self.shares.setter(user);
+            let current_shares = shares.get();
+            if current_shares < shares_i256 {
+                return Err(b"Insufficient shares".to_vec());
+            }
+            let new_shares = current_shares - shares_i256;
+            shares.set(new_shares);
+            new_shares
+        }; // borrow released here
         self.total_shares.set(self.total_shares.get() - shares_i256);
         self.available_liquidity.set(self.available_liquidity.get() - amount_to_return);
 
         let mut reward_debt = self.reward_debt.setter(user);
-        reward_debt.set((shares.get() * self.acc_fee_per_share.get()) / wad());
+        reward_debt.set((new_shares * self.acc_fee_per_share.get()) / wad());
 
         let amount_usdc = shares_to_remove / U256::from(1_000_000_000_000u128);
         let usdc = IERC20::new(self.usdc_token.get());

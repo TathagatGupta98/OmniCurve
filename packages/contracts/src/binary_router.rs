@@ -1,9 +1,10 @@
+extern crate alloc;
+
 use alloy_primitives::{I256, U256, Address};
 use alloy_sol_types::sol;
 use stylus_sdk::prelude::*;
+use alloc::vec;
 use alloc::vec::Vec;
-
-extern crate alloc;
 
 use crate::interfaces::IERC20;
 use crate::math_core::gaussian_cdf;
@@ -18,6 +19,7 @@ sol_interface! {
         function payoutWinnings(address user, uint256 token_id, uint256 amount_wad) external;
         function underwriteTrade(uint256 token_id, uint256 premium_wad, uint256 max_liability_wad) external;
         function proposeResolution(uint256 winning_id) external;
+        function executeResolution() external;
     }
 }
 
@@ -106,6 +108,19 @@ impl BinaryRouter {
         amm.propose_resolution(self.vm(), config2, winning_id).map_err(|_| Error::AmmCallFailed)?;
         
         Ok(())
+    }
+
+    pub fn execute_settlement(&mut self) -> Result<(), Vec<u8>> {
+        if self.vm().msg_sender() != self.owner.get() { return Err(Error::Unauthorized.into()); }
+        // The AMM's executeResolution must be called directly by the market owner.
+        // This function is a no-op placeholder that documents the settlement flow.
+        // Market owners should call executeResolution() directly on the AMM contract
+        // after the 24-hour timelock set by proposeResolution has passed.
+        Ok(())
+    }
+
+    pub fn get_amm_address(&self) -> Result<Address, Vec<u8>> {
+        Ok(self.amm_address.get())
     }
 
     pub fn buy_yes(&mut self, target_price: I256, amount_wad: U256) -> Result<(), Vec<u8>> {

@@ -1,4 +1,7 @@
+#![cfg_attr(not(any(test, feature = "export-abi")), no_std)]
 #![allow(unexpected_cfgs)]
+
+extern crate alloc;
 
 pub mod math_core;
 pub mod interfaces;

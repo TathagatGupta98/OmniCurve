@@ -83,6 +83,13 @@ fn erf_approx(x: I256) -> I256 {
 }
 
 fn exp_wad(x: I256) -> I256 {
+    // Guard: exp(20) ≈ 4.85e8 which fits; exp(>20 WAD) overflows I256
+    let max_exp_wad = I256::try_from(20_000_000_000_000_000_000i128).unwrap();
+    if x >= max_exp_wad {
+        // Return a saturated large value (1e18 * 1e8 = 1e26, safely below I256 max)
+        return I256::try_from(100_000_000_000_000_000_000_000_000i128)
+            .unwrap_or(I256::MAX);
+    }
     if x <= min_exp_wad() {
         return I256::ZERO;
     }
