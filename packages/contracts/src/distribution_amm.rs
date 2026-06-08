@@ -6,7 +6,7 @@ use alloc::vec;
 
 extern crate alloc;
 
-use crate::interfaces::IERC20;
+use crate::interfaces::{IERC20, ILpToken};
 use crate::math_core::gaussian_cdf;
 
 #[inline(always)] fn wad() -> I256 { I256::try_from(1_000_000_000_000_000_000i128).unwrap() }
@@ -32,9 +32,8 @@ sol_storage! {
         int256 locked_collateral;
         address usdc_token;
         address router_address;
+        address lp_token_address;
         int256 acc_fee_per_share;
-        int256 total_shares;
-        mapping(address => int256) shares;
         mapping(address => int256) reward_debt;
         bool is_resolved;
         uint256 winning_token_id;
@@ -53,6 +52,7 @@ pub enum Error {
     Unauthorized,
     InsufficientLiquidity,
     Overflow,
+    LpTokenCallFailed,
 }
 
 impl From<Error> for Vec<u8> {
@@ -63,6 +63,7 @@ impl From<Error> for Vec<u8> {
             Error::Unauthorized => b"Unauthorized".to_vec(),
             Error::InsufficientLiquidity => b"InsufficientLiquidity".to_vec(),
             Error::Overflow => b"Overflow".to_vec(),
+            Error::LpTokenCallFailed => b"LpTokenCallFailed".to_vec(),
         }
     }
 }
@@ -103,6 +104,14 @@ impl DistributionAmm {
         Ok(())
     }
 
+    pub fn set_lp_token(&mut self, addr: Address) -> Result<(), Vec<u8>> {
+        if self.vm().msg_sender() != self.owner.get() { return Err(Error::Unauthorized.into()); }
+        self.lp_token_address.set(addr);
+        Ok(())
+    }
+
+    pub fn lp_token(&self) -> Result<Address, Vec<u8>> { Ok(self.lp_token_address.get()) }
+
     pub fn set_sigma_min(&mut self, min: I256) -> Result<(), Vec<u8>> {
         if self.vm().msg_sender() != self.owner.get() { return Err(Error::Unauthorized.into()); }
         self.sigma_min.set(min);
@@ -131,7 +140,11 @@ impl DistributionAmm {
     // difference is intentional; sweep_dust() recovers any rounding remainder.
     pub fn distribute_fee(&mut self, fee_amount: U256) -> Result<(), Vec<u8>> {
         if self.vm().msg_sender() != self.router_address.get() { return Err(Error::Unauthorized.into()); }
-        let total_shares = self.total_shares.get();
+        
+        let lp_token = ILpToken::new(self.lp_token_address.get());
+        let total_supply_u256 = lp_token.total_supply(self.vm(), Call::new()).map_err(|_| Error::LpTokenCallFailed)?;
+        let total_shares = I256::try_from(total_supply_u256).map_err(|_| Error::Overflow)?;
+
         if total_shares > I256::ZERO {
             let fee_i256 = I256::try_from(fee_amount).map_err(|_| Error::Overflow)?;
             let current_acc = self.acc_fee_per_share.get();
@@ -145,7 +158,11 @@ impl DistributionAmm {
 
     pub fn claim_fees(&mut self) -> Result<(), Vec<u8>> {
         let user = self.vm().msg_sender();
-        let shares = self.shares.getter(user).get();
+        
+        let lp_token = ILpToken::new(self.lp_token_address.get());
+        let shares_u256 = lp_token.balance_of(self.vm(), Call::new(), user).map_err(|_| Error::LpTokenCallFailed)?;
+        let shares = I256::try_from(shares_u256).map_err(|_| Error::Overflow)?;
+
         if shares > I256::ZERO {
             let pending = (shares * self.acc_fee_per_share.get()) / wad() - self.reward_debt.getter(user).get();
             if pending > I256::ZERO {
@@ -192,13 +209,15 @@ impl DistributionAmm {
         }
 
         self.available_liquidity.set(self.available_liquidity.get() + amount_i256);
-        self.total_shares.set(self.total_shares.get() + amount_i256);
 
         let user = self.vm().msg_sender();
-        let mut shares = self.shares.setter(user);
-        let current_shares = shares.get();
-        let new_shares = current_shares + amount_i256;
-        shares.set(new_shares);
+        let lp_token = ILpToken::new(self.lp_token_address.get());
+        
+        let config = Call::new_mutating(&mut *self);
+        lp_token.mint(self.vm(), config, user, amount_wad).map_err(|_| Error::LpTokenCallFailed)?;
+
+        let shares_u256 = lp_token.balance_of(self.vm(), Call::new(), user).map_err(|_| Error::LpTokenCallFailed)?;
+        let new_shares = I256::try_from(shares_u256).map_err(|_| Error::Overflow)?;
 
         let mut reward_debt = self.reward_debt.setter(user);
         reward_debt.set((new_shares * self.acc_fee_per_share.get()) / wad());
@@ -228,17 +247,18 @@ impl DistributionAmm {
             return Err(Error::InsufficientLiquidity.into());
         }
 
-        let new_shares = {
-            let mut shares = self.shares.setter(user);
-            let current_shares = shares.get();
-            if current_shares < shares_i256 {
-                return Err(b"Insufficient shares".to_vec());
-            }
-            let new_shares = current_shares - shares_i256;
-            shares.set(new_shares);
-            new_shares
-        }; // borrow released here
-        self.total_shares.set(self.total_shares.get() - shares_i256);
+        let lp_token = ILpToken::new(self.lp_token_address.get());
+        let current_shares_u256 = lp_token.balance_of(self.vm(), Call::new(), user).map_err(|_| Error::LpTokenCallFailed)?;
+        if current_shares_u256 < shares_to_remove {
+            return Err(b"Insufficient shares".to_vec());
+        }
+        
+        let config = Call::new_mutating(&mut *self);
+        lp_token.burn(self.vm(), config, user, shares_to_remove).map_err(|_| Error::LpTokenCallFailed)?;
+        
+        let new_shares_u256 = lp_token.balance_of(self.vm(), Call::new(), user).map_err(|_| Error::LpTokenCallFailed)?;
+        let new_shares = I256::try_from(new_shares_u256).map_err(|_| Error::Overflow)?;
+        
         self.available_liquidity.set(self.available_liquidity.get() - amount_to_return);
 
         let mut reward_debt = self.reward_debt.setter(user);

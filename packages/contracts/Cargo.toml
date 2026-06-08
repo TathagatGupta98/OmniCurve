@@ -26,6 +26,7 @@ mini-alloc = ["stylus-sdk/mini-alloc"]
 amm = []
 router = []
 factory = []
+lp-token = []
 
 [dependencies]
 stylus-sdk = { version = "0.10.7", default-features = false }

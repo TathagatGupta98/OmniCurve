@@ -6,11 +6,12 @@ use stylus_sdk::prelude::*;
 use stylus_sdk::deploy::RawDeploy;
 use alloc::vec;
 use alloc::vec::Vec;
+use alloc::string::String;
 
-use crate::interfaces::{IProxyAmm, IProxyRouter};
+use crate::interfaces::{IProxyAmm, IProxyRouter, ILpToken};
 
 sol! {
-    event MarketCreated(uint256 indexed market_id, address amm, address router);
+    event MarketCreated(uint256 indexed market_id, address amm, address router, address lp_token);
 }
 
 sol_storage! {
@@ -20,9 +21,11 @@ sol_storage! {
         address pending_owner;
         address amm_implementation;
         address router_implementation;
+        address lp_token_implementation;
         uint256 market_count;
         mapping(uint256 => address) amm_proxies;
         mapping(uint256 => address) router_proxies;
+        mapping(uint256 => address) lp_token_proxies;
     }
 }
 
@@ -120,11 +123,12 @@ fn market_salt(market_id: U256, domain: u8) -> B256 {
 impl OmniCurveFactory {
     /// One-time initialization. Sets the owner and the implementation addresses
     /// for the AMM and Router contracts that will be cloned for each new market.
-    pub fn initialize(&mut self, owner: Address, amm_impl: Address, router_impl: Address) -> Result<(), Vec<u8>> {
+    pub fn initialize(&mut self, owner: Address, amm_impl: Address, router_impl: Address, lp_impl: Address) -> Result<(), Vec<u8>> {
         if self.owner.get() != Address::ZERO { return Err(b"Already initialized".to_vec()); }
         self.owner.set(owner);
         self.amm_implementation.set(amm_impl);
         self.router_implementation.set(router_impl);
+        self.lp_token_implementation.set(lp_impl);
         Ok(())
     }
 
@@ -152,6 +156,12 @@ impl OmniCurveFactory {
     pub fn set_router_implementation(&mut self, impl_addr: Address) -> Result<(), Vec<u8>> {
         if self.vm().msg_sender() != self.owner.get() { return Err(Error::Unauthorized.into()); }
         self.router_implementation.set(impl_addr);
+        Ok(())
+    }
+
+    pub fn set_lp_token_implementation(&mut self, impl_addr: Address) -> Result<(), Vec<u8>> {
+        if self.vm().msg_sender() != self.owner.get() { return Err(Error::Unauthorized.into()); }
+        self.lp_token_implementation.set(impl_addr);
         Ok(())
     }
 
@@ -201,9 +211,20 @@ impl OmniCurveFactory {
                 .map_err(|_| Error::CloneFailed)?
         };
 
-        // --- Initialize both proxies (factory is the initial owner) ---
+        // --- Deploy LP token proxy clone ---
+        let lp_bytecode = build_eip1167_creation_code(self.lp_token_implementation.get());
+        let lp_salt = market_salt(current_count, 2);
+        let lp_proxy = unsafe {
+            RawDeploy::new()
+                .salt(lp_salt)
+                .deploy(self.vm(), &lp_bytecode, U256::ZERO)
+                .map_err(|_| Error::CloneFailed)?
+        };
+
+        // --- Initialize proxies (factory is the initial owner) ---
         let proxy_amm = IProxyAmm::new(amm_proxy);
         let proxy_router = IProxyRouter::new(router_proxy);
+        let proxy_lp = ILpToken::new(lp_proxy);
 
         let cfg = Call::new_mutating(&mut *self);
         proxy_amm.initialize(self.vm(), cfg, factory_address).map_err(|_| Error::InitFailed)?;
@@ -211,9 +232,15 @@ impl OmniCurveFactory {
         let cfg = Call::new_mutating(&mut *self);
         proxy_router.initialize(self.vm(), cfg, factory_address).map_err(|_| Error::InitFailed)?;
 
+        let cfg = Call::new_mutating(&mut *self);
+        proxy_lp.initialize(self.vm(), cfg, amm_proxy, String::from("OmniCurve LP"), String::from("OCLP")).map_err(|_| Error::InitFailed)?;
+
         // --- Wire AMM ---
         let cfg = Call::new_mutating(&mut *self);
         proxy_amm.set_router_address(self.vm(), cfg, router_proxy).map_err(|_| Error::InitFailed)?;
+
+        let cfg = Call::new_mutating(&mut *self);
+        proxy_amm.set_lp_token(self.vm(), cfg, lp_proxy).map_err(|_| Error::InitFailed)?;
 
         let cfg = Call::new_mutating(&mut *self);
         proxy_amm.set_usdc_token(self.vm(), cfg, usdc).map_err(|_| Error::InitFailed)?;
@@ -239,10 +266,13 @@ impl OmniCurveFactory {
         let cfg = Call::new_mutating(&mut *self);
         proxy_router.transfer_ownership(self.vm(), cfg, creator).map_err(|_| Error::InitFailed)?;
 
+
+
         // --- Record market ---
         self.amm_proxies.setter(current_count).set(amm_proxy);
         self.router_proxies.setter(current_count).set(router_proxy);
-        self.vm().log(MarketCreated { market_id: current_count, amm: amm_proxy, router: router_proxy });
+        self.lp_token_proxies.setter(current_count).set(lp_proxy);
+        self.vm().log(MarketCreated { market_id: current_count, amm: amm_proxy, router: router_proxy, lp_token: lp_proxy });
         self.market_count.set(current_count + U256::from(1));
 
         Ok(())
@@ -266,5 +296,13 @@ impl OmniCurveFactory {
 
     pub fn get_router_implementation(&self) -> Result<Address, Vec<u8>> {
         Ok(self.router_implementation.get())
+    }
+
+    pub fn get_market_lp_token(&self, market_id: U256) -> Result<Address, Vec<u8>> {
+        Ok(self.lp_token_proxies.getter(market_id).get())
+    }
+
+    pub fn get_lp_token_implementation(&self) -> Result<Address, Vec<u8>> {
+        Ok(self.lp_token_implementation.get())
     }
 }

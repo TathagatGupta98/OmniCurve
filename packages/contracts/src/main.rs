@@ -6,6 +6,9 @@ pub extern "C" fn main() {}
 
 #[cfg(feature = "export-abi")]
 fn main() {
+    #[cfg(all(feature = "lp-token", not(any(feature = "factory", feature = "router", feature = "amm"))))]
+    omnicurve_contracts::lp_token::print_from_args();
+
     #[cfg(feature = "factory")]
     omnicurve_contracts::factory::print_from_args();
 
