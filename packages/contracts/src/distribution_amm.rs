@@ -152,19 +152,23 @@ impl DistributionAmm {
     // transferred to this contract by the router before this call. The 1e12 scaling
     // difference is intentional; sweep_dust() recovers any rounding remainder.
     //
-    // H1: Fee distribution now uses available_liquidity instead of LP totalSupply.
+    // H1 fix reverted: MasterChef pattern requires totalShares as denominator,
+    // not available_liquidity which diverges as fees accumulate and trades lock capital.
     pub fn distribute_fee(&mut self, fee_amount: U256) -> Result<(), Vec<u8>> {
         if self.vm().msg_sender() != self.router_address.get() { return Err(Error::Unauthorized.into()); }
         
-        let avail_liq = self.available_liquidity.get();
+        let lp_token = ILpToken::new(self.lp_token_address.get());
+        let total_supply_u256 = lp_token.total_supply(self.vm(), Call::new()).map_err(|_| Error::LpTokenCallFailed)?;
+        let total_shares = I256::try_from(total_supply_u256).map_err(|_| Error::Overflow)?;
 
-        if avail_liq > I256::ZERO {
+        if total_shares > I256::ZERO {
             let fee_i256 = I256::try_from(fee_amount).map_err(|_| Error::Overflow)?;
             let current_acc = self.acc_fee_per_share.get();
-            // H1: Use available_liquidity (L) as denominator per spec: S ← S + f / L
-            let inc = (fee_i256 * wad()) / avail_liq;
+            // MasterChef: accumulator increment = fee / totalShares
+            let inc = (fee_i256 * wad()) / total_shares;
             self.acc_fee_per_share.set(current_acc + inc);
-            self.available_liquidity.set(avail_liq + fee_i256);
+            // Track fee in available_liquidity for USDC accounting
+            self.available_liquidity.set(self.available_liquidity.get() + fee_i256);
             self.vm().log(FeeDistributed { amount_wad: fee_amount });
         }
         Ok(())
@@ -277,6 +281,21 @@ impl DistributionAmm {
         res
     }
 
+    /// Release collateral for a losing token position back to available_liquidity.
+    /// Called by the router after verifying the position lost.
+    pub fn release_collateral(&mut self, token_id: U256) -> Result<(), Vec<u8>> {
+        if self.vm().msg_sender() != self.router_address.get() { return Err(Error::Unauthorized.into()); }
+        
+        let liability = self.token_liabilities.getter(token_id).get();
+        if liability <= I256::ZERO { return Ok(()); }
+        
+        self.token_liabilities.setter(token_id).set(I256::ZERO);
+        self.locked_collateral.set(self.locked_collateral.get() - liability);
+        self.available_liquidity.set(self.available_liquidity.get() + liability);
+        
+        Ok(())
+    }
+
     // M5: Capped sweep_dust
     // C5: Reentrancy guarded
     pub fn sweep_dust(&mut self) -> Result<(), Vec<u8>> {
@@ -347,9 +366,10 @@ impl DistributionAmm {
                 let mu_diff = old_mu - target_mu;
                 let mu_diff_sq = wad_mul(mu_diff, mu_diff);                        // (μ_old - μ_new)²
                 
-                let combined_var = wad_mul(w_old, old_var) / wad()
-                    + wad_mul(w_new, new_var) / wad()
-                    + wad_mul(wad_mul(w_old, w_new) / wad(), mu_diff_sq) / wad();  // Cross term
+                // wad_mul already divides by WAD once; no second division needed
+                let combined_var = wad_mul(w_old, old_var)
+                    + wad_mul(w_new, new_var)
+                    + wad_mul(wad_mul(w_old, w_new), mu_diff_sq);
                 
                 let combined_sigma = sqrt_wad(combined_var);
                 self.global_sigma.set(combined_sigma);
@@ -430,15 +450,19 @@ impl DistributionAmm {
         Ok(())
     }
 
+    // Router handles resolution logic (per-threshold). AMM validates against
+    // per-token liability and trusts the router (which is the only allowed caller).
     fn payout_winnings_internal(&mut self, user: Address, token_id: U256, amount_wad: U256) -> Result<(), Vec<u8>> {
-        if !self.is_resolved.get() { return Err(b"Market not resolved".to_vec()); }
-        if token_id != self.winning_token_id.get() { return Err(b"Token did not win".to_vec()); }
-
         let amount_i256 = I256::try_from(amount_wad).map_err(|_| Error::Overflow)?;
-        if self.locked_collateral.get() < amount_i256 {
+        
+        // Verify this token has sufficient liability to cover the payout
+        let token_liability = self.token_liabilities.getter(token_id).get();
+        if token_liability < amount_i256 {
             return Err(Error::InsufficientLiquidity.into());
         }
-
+        
+        // Reduce per-token liability and global locked collateral
+        self.token_liabilities.setter(token_id).set(token_liability - amount_i256);
         self.locked_collateral.set(self.locked_collateral.get() - amount_i256);
 
         let amount_usdc = amount_wad / U256::from(1_000_000_000_000u128);

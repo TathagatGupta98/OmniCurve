@@ -18,6 +18,7 @@ sol_interface! {
         function distributeFee(uint256 fee_amount) external;
         function payoutWinnings(address user, uint256 token_id, uint256 amount_wad) external;
         function underwriteTrade(uint256 token_id, uint256 premium_wad, uint256 max_liability_wad) external;
+        function releaseCollateral(uint256 token_id) external;
     }
 }
 
@@ -256,6 +257,24 @@ impl BinaryRouter {
 
     pub fn get_final_price(&self) -> Result<I256, Vec<u8>> {
         Ok(self.final_price.get())
+    }
+
+    /// Permissionless: release collateral locked for a losing position.
+    /// Anyone can call this after resolution to free LP capital.
+    pub fn release_losing_collateral(&mut self, target_x: I256, is_yes: bool) -> Result<(), Vec<u8>> {
+        if !self.market_resolved.get() { return Err(Error::NotResolved.into()); }
+        let final_price = self.final_price.get();
+        
+        let is_winner = if is_yes { final_price >= target_x } else { final_price < target_x };
+        if is_winner { return Err(b"Position is winning".to_vec()); }
+        
+        let token_id = self.derive_token_id(target_x, is_yes);
+        
+        let amm = IDistributionAmm::new(self.amm_address.get());
+        let config = Call::new_mutating(&mut *self);
+        amm.release_collateral(self.vm(), config, token_id).map_err(|_| Error::AmmCallFailed)?;
+        
+        Ok(())
     }
 
     /// Helper: compute the token_id for a given target and direction

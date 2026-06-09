@@ -6,21 +6,21 @@
 
 | Contract | Address |
 |----------|---------|
-| AMM Implementation | `0xdcdd8e30284d50a7df5d0f5d110bd57118c299aa` |
-| Router Implementation | `0x53ad98ecf5e8f9d80a2ec037297679bb3abf802e` |
-| LP Token Implementation | `0xcf8f9aef697550f67aa64369ed23dd1a8160baf2` |
-| Factory | `0x1bbdb700863309ab2588c9d64786bd0ac376d150` |
+| AMM Implementation | `0x918dd757cfd276b08d054f43adb20d7320f4349d` |
+| Router Implementation | `0xeb9e1bd457a3ff85e6bdc68448bab5b604d65a92` |
+| LP Token Implementation | `0xdd3aec1a025c0748a66d2bc888074eee58881295` |
+| Factory | `0xa2e57ff3fdba560ae853279df511cd4fa4fb9d93` |
 
 ### Market #0 Proxy Contracts (deployed by factory)
 
 | Contract | Address |
 |----------|---------|
-| AMM Proxy | `0x7cd2d6c56fbC52552C5014b00FC30176E388fB0f` |
-| Router Proxy | `0xF1FB7FA83E5Cdfbe975ad139dbD35b223E554CdB` |
-| LP Token Proxy | `0x2Cd7b0016134D5dcf92da81A981e0dFcaC3e6250` |
+| AMM Proxy | `0x9073e29A9218CA0588F9f04d339665525004Fb63` |
+| Router Proxy | `0xa5c72C337E0b72600675d42fc6D984c065885B73` |
+| LP Token Proxy | `0x9C22f7257fCAce295fa390C64ad60ecD7591162d` |
 
-**Owner (AMM + Router):** `0xE958DaE545e5dAd0b4bE2E58432298dfd5178342`
-**LP Token Owner:** AMM Proxy (`0x7cd2d6c56fbC52552C5014b00FC30176E388fB0f`)
+**Owner (AMM + Router):** `0x2154E13EC2399ebd6e81f9900389396Cfa760f98`
+**LP Token Owner:** AMM Proxy (`0x9073e29A9218CA0588F9f04d339665525004Fb63`)
 
 ---
 
