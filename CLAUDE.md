@@ -29,7 +29,7 @@ Where μ (mu) is the market's expected value (mean) and σ (sigma) is the market
 | Smart Contracts | Rust (`#![no_std]`), Arbitrum Stylus SDK v0.10.7, compiled to `wasm32-unknown-unknown` |
 | Monorepo | pnpm workspaces |
 | Backend API | Node.js, TypeScript, Express 5, Socket.io |
-| Database | Prisma ORM (schema not yet created) |
+| Database | Prisma ORM + PostgreSQL, migrations in `prisma/migrations/` |
 | Indexer | Goldsky subgraph (from-ABI deployment), GraphQL |
 | Frontend | React + TypeScript + Tailwind + Wagmi/Viem (placeholder, not yet built) |
 | Shared Types | TypeScript package with ABI exports |
@@ -61,37 +61,44 @@ OmniCurve/
 │   │
 │   ├── backend/            # Node.js API & real-time server
 │   │   ├── src/
-│   │   │   ├── server.ts           # Modern Express 5 entry point (port 3001)
+│   │   │   ├── server.ts           # Express 5 entry point (port 3001)
+│   │   │   ├── config.ts           # Zod-validated environment config
 │   │   │   ├── controllers/
-│   │   │   │   └── marketController.ts  # GET /markets, GET /markets/:id
+│   │   │   │   └── marketController.ts  # Market REST handlers
 │   │   │   ├── services/
 │   │   │   │   ├── marketService.ts     # Prisma queries for markets
-│   │   │   │   ├── indexerService.ts    # Handles LiquidityAdded/StakePlaced events
-│   │   │   │   └── mathService.ts       # Server-side Gaussian CDF via jStat
+│   │   │   │   ├── indexerService.ts    # Goldsky event ingestion (idempotent)
+│   │   │   │   ├── mathService.ts       # Gaussian CDF via jStat, price preview
+│   │   │   │   └── chainService.ts      # viem on-chain reads + startChainWatcher()
 │   │   │   ├── sockets/
-│   │   │   │   └── socketManager.ts     # Socket.io for real-time market updates
+│   │   │   │   └── socketManager.ts     # Socket.io rooms, requestPrice, broadcasts
 │   │   │   ├── webhooks/
-│   │   │   │   └── goldskyHandler.ts    # POST /webhooks/goldsky (event ingestion)
+│   │   │   │   └── goldskyHandler.ts    # POST /webhooks/goldsky (HMAC verified)
 │   │   │   ├── middlewares/
 │   │   │   │   ├── errorHandler.ts      # Global error handler
-│   │   │   │   └── goldskyAuth.ts       # HMAC-SHA256 webhook signature verification
+│   │   │   │   ├── goldskyAuth.ts       # HMAC-SHA256 webhook signature verification
+│   │   │   │   └── rateLimiter.ts       # 100 req/min per IP
 │   │   │   ├── models/
 │   │   │   │   └── db.ts               # Prisma client singleton
 │   │   │   ├── routes/
 │   │   │   │   ├── health.ts           # GET /api/health
-│   │   │   │   └── marketRoutes.ts     # Market route definitions
-│   │   │   ├── indexer/                # Legacy JS — Goldsky GraphQL polling client
-│   │   │   │   ├── indexer.js
-│   │   │   │   └── queries.js
-│   │   │   ├── server/                 # Legacy JS — standalone Express REST API
-│   │   │   │   ├── app.js
-│   │   │   │   └── utils.js           # WAD→float formatting (formatEther)
-│   │   │   ├── websocket/             # Legacy JS — raw WebSocket + viem event watching
-│   │   │   │   └── server.js
+│   │   │   │   ├── marketRoutes.ts     # Market + price + lp-stats + settle routes
+│   │   │   │   ├── userRoutes.ts       # GET /api/users/:address/portfolio
+│   │   │   │   └── apiDocs.ts          # GET /api/docs (OpenAPI-style JSON schema)
+│   │   │   ├── db/
+│   │   │   │   ├── seed.ts             # Seed DB from Factory on-chain state
+│   │   │   │   └── abis.ts             # Minimal ABI fragments for viem
 │   │   │   └── types/
 │   │   │       └── jstat.d.ts          # Type declaration for jstat library
+│   │   ├── prisma/
+│   │   │   ├── schema.prisma           # User / Market / Position models
+│   │   │   └── migrations/
+│   │   │       ├── migration_lock.toml
+│   │   │       └── 20260609000000_init/
+│   │   │           └── migration.sql   # Initial schema migration
+│   │   ├── SOCKET_EVENTS.md           # Socket.io event reference for frontend
 │   │   ├── goldsky-amm.json           # Goldsky from-ABI subgraph config
-│   │   ├── prisma.config.ts           # Prisma config (references missing schema)
+│   │   ├── prisma.config.ts           # Prisma config
 │   │   └── package.json
 │   │
 │   ├── frontend/           # Placeholder — not yet built
@@ -319,26 +326,47 @@ All functions use I256 (signed 256-bit integer) with 18-decimal fixed-point (WAD
 
 ## Backend Architecture
 
-The backend has two layers from different development phases:
+Single TypeScript stack — Express 5 + Socket.io + Prisma + viem.
 
-### Modern Architecture (TypeScript, primary)
-- **Entry**: `src/server.ts` — Express 5 + Socket.io + Helmet + CORS
-- **Routes**: `/api/health`, `/api/markets`, `/api/markets/:marketId`, `/api/webhooks/goldsky`
-- **Services**: Market queries (Prisma), indexer event handling, math service (jStat CDF)
-- **Real-time**: Socket.io rooms per market ID — broadcasts `marketStateUpdated` events
-- **Database**: Prisma ORM (schema file is **missing** — needs to be created)
-- **Webhooks**: Goldsky POST webhook with HMAC-SHA256 signature verification
+### Entry & Config
+- **`src/server.ts`** — Express 5 + Socket.io + Helmet + CORS + rate limiter; calls `startChainWatcher()` after `httpServer.listen()`
+- **`src/config.ts`** — Zod-validated env; crashes at startup if any required var is missing
 
-### Legacy Architecture (JavaScript, should be removed/consolidated)
-- `src/server/app.js` — Standalone Express server reading from Goldsky GraphQL
-- `src/websocket/server.js` — Raw WebSocket server watching CurveUpdated events via viem
-- `src/indexer/indexer.js` — Polling client fetching Goldsky data every 5 seconds
+### REST API Routes
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/api/health` | Server liveness check |
+| GET | `/api/markets` | List all markets (`?category=&active=`) |
+| GET | `/api/markets/:id` | Market detail + positions |
+| GET | `/api/markets/:id/price?x=&direction=` | Price preview: `{pYes, pNo, grossCostWad, feeCostWad}` |
+| GET | `/api/markets/:id/lp-stats?address=` | LP balance, accFeePerShare, pending rewards |
+| POST | `/api/markets/:id/settle` | Owner-only: returns `winning_token_id` (no chain tx) |
+| GET | `/api/users/:address/portfolio` | All positions + current value for a wallet |
+| POST | `/api/webhooks/goldsky` | Goldsky event receiver (HMAC-SHA256 verified) |
+| GET | `/api/docs` | OpenAPI-style JSON schema |
 
-### Expected Prisma Models (from indexerService.ts usage)
+### Socket.io Events
+See `SOCKET_EVENTS.md` for the full reference. Key events:
+- Client emits `joinMarket(marketId)` → server immediately emits current state from Prisma
+- Client emits `requestPrice({marketId, x, direction})` → server emits `priceUpdate` back to that socket only
+- Server broadcasts `marketStateUpdated` and `marketResolved` to the market room on every chain event
+
+### Services
+- **`chainService.ts`** — viem `createPublicClient` on arbitrum-sepolia; `getMarketState()`, `getLpTokenBalance()`, `computePendingRewards()`; `startChainWatcher()` watches `CurveUpdated`, `LiquidityAdded/Removed`, `TradeExecuted`, `MarketResolved` — updates Prisma and broadcasts Socket.io on each event
+- **`indexerService.ts`** — Goldsky webhook event handlers; idempotency guard prevents double-counting on retries
+- **`mathService.ts`** — `calculatePricePreview(x, direction, mu, sigma, stakeAmount?)` via jStat; includes 1% fee breakdown
+
+### Database
+Prisma ORM with PostgreSQL. Migration applied via `prisma migrate deploy`.
+
+**Models:**
 ```
-Market: { marketId, currentMu, currentSigma, totalLiquidity, globalAccumulator, category, positions[] }
-User: { walletAddress, totalLiquidityProvided, globalAccumulatorSnapshot, rolePreference }
-Position: { positionId, userAddress, marketId, targetValueX, direction (ABOVE/BELOW), tokensMinted, stakeAmount }
+User:     walletAddress (PK), rolePreference, globalAccumulatorSnapshot, totalLiquidityProvided
+Market:   marketId (PK), title, category, currentMu, currentSigma, totalLiquidity,
+          globalAccumulator, minVarianceBound, ammAddress, routerAddress, lpTokenAddress,
+          isResolved, winningTokenId
+Position: positionId (PK), userAddress (FK), marketId (FK), targetValueX,
+          direction (ABOVE|BELOW), tokensMinted, stakeAmount
 ```
 
 ---
@@ -349,19 +377,16 @@ Position: { positionId, userAddress, marketId, targetValueX, direction (ABOVE/BE
 1. **`claim_fees` bug**: Sends WAD amount as USDC (missing `/1e12` conversion) — fees are permanently locked
 2. **`I256::into_raw()` on negative values**: Produces garbage U256 — affects event emissions and sweep_dust edge case
 3. **No slippage protection**: Trades have no max cost parameter
-4. **Prisma schema missing**: Backend database layer cannot function
 
 ### Medium Priority
-5. **Duplicate backend architectures**: Legacy JS and modern TS serve the same purpose
-6. **ABI drift**: Two ABI directories (`types/abis/` root vs `packages/types/abis/`) with different naming and potentially different contents
-7. **Backend .env points to old contract addresses**: Needs updating to factory-deployed proxies
-8. **1% fee hardcoded**: No governance or per-market configuration
-9. **`execute_settlement` is dead code**: Does nothing, misleading for integrators
-10. **`create_market` is owner-only**: Prevents permissionless market creation
+4. **ABI drift**: Two ABI directories (`types/abis/` root vs `packages/types/abis/`) with different naming and potentially different contents
+5. **Backend .env points to old contract addresses**: Needs updating to factory-deployed proxies
+6. **1% fee hardcoded**: No governance or per-market configuration
+7. **`execute_settlement` is dead code**: Does nothing, misleading for integrators
+8. **`create_market` is owner-only**: Prevents permissionless market creation
 
 ### Not Yet Built
 - **Frontend**: Only a placeholder `package.json` exists
-- **Prisma schema**: Database models referenced but never defined
 - **docker-compose.yml**: Mentioned in DEVELOPER_CONTEXT.md but not created
 - **Integration tests**: No end-to-end tests across contract interactions
 - **Oracle integration**: Resolution is fully manual (owner calls `settleByPrice`)
@@ -390,9 +415,11 @@ cargo test                            # Rust unit tests (math_core)
 forge test                            # Foundry tests (mock contracts)
 
 # Backend
-pnpm --filter @omnicurve/backend start:api       # Express server (port 3001)
-pnpm --filter @omnicurve/backend start:ws         # WebSocket server
-pnpm --filter @omnicurve/backend start:indexer    # Goldsky polling client
+pnpm --filter @omnicurve/backend start            # migrate + seed + start:api (production)
+pnpm --filter @omnicurve/backend start:api        # Express server only (port 3001)
+pnpm --filter @omnicurve/backend db:migrate       # Apply prisma/migrations via migrate deploy
+pnpm --filter @omnicurve/backend db:push          # Push schema without migrations (dev only)
+pnpm --filter @omnicurve/backend db:seed          # Seed DB from Factory on-chain state
 
 # Goldsky subgraph
 pnpm --filter @omnicurve/backend deploy:subgraph:amm
