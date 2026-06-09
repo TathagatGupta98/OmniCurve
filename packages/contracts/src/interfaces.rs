@@ -24,6 +24,7 @@ sol_interface! {
         function initialize(address owner) external;
         function setUsdcToken(address token) external;
         function setAmmAddress(address addr) external;
+        function setMarketId(uint256 market_id) external;
         function transferOwnership(address new_owner) external;
         function acceptOwnership() external;
     }
@@ -45,4 +46,3 @@ sol_interface! {
         function burn(address from, uint256 amount) external;
     }
 }
-

@@ -186,7 +186,7 @@ impl OmniCurveFactory {
         usdc: Address,
         sigma_min: I256,
     ) -> Result<(), Vec<u8>> {
-        if self.vm().msg_sender() != self.owner.get() { return Err(Error::Unauthorized.into()); }
+        // M3: Anyone can create markets (no owner restriction)
 
         let current_count = self.market_count.get();
         let factory_address = self.vm().contract_address();
@@ -254,6 +254,10 @@ impl OmniCurveFactory {
 
         let cfg = Call::new_mutating(&mut *self);
         proxy_router.set_usdc_token(self.vm(), cfg, usdc).map_err(|_| Error::InitFailed)?;
+
+        // Set market_id on router for per-threshold token ID derivation
+        let cfg = Call::new_mutating(&mut *self);
+        proxy_router.set_market_id(self.vm(), cfg, current_count).map_err(|_| Error::InitFailed)?;
 
         // --- Transfer ownership to caller ---
         // NOTE: This is step 1 of a two-step transfer. The caller must call
