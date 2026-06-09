@@ -9,7 +9,7 @@ import { createPublicClient, http, formatEther, type WatchContractEventReturnTyp
 import { arbitrumSepolia } from 'viem/chains';
 import { config } from '../config';
 import prisma from '../models/db';
-import { ammAbi, routerAbi } from '../db/abis';
+import { ammAbi, routerAbi, lpTokenAbi } from '../db/abis';
 import { broadcastMarketUpdate, broadcastMarketResolved } from '../sockets/socketManager';
 
 // ─── Shared viem client ──────────────────────────────────────────────────────
@@ -43,6 +43,89 @@ export async function getMarketState(ammAddress: string): Promise<{
     sigma: parseFloat(formatEther(rawSigma)),
     totalLiquidity: parseFloat(formatEther(rawLiquidity)),
   };
+}
+
+// ─── Event watcher ───────────────────────────────────────────────────────────
+
+// ─── LP Stats helpers (Section 3) ────────────────────────────────────────────
+
+/**
+ * Reads LP token balance for a user by first discovering the LP token address
+ * from the AMM, then calling balanceOf on that token.
+ */
+export async function getLpTokenBalance(ammAddress: string, userAddress: string): Promise<number> {
+  const address = ammAddress as `0x${string}`;
+  const user = userAddress as `0x${string}`;
+
+  const lpTokenAddress = await publicClient.readContract({
+    address,
+    abi: ammAbi,
+    functionName: 'lpToken',
+  }) as `0x${string}`;
+
+  const rawBalance = await publicClient.readContract({
+    address: lpTokenAddress,
+    abi: lpTokenAbi,
+    functionName: 'balanceOf',
+    args: [user],
+  });
+
+  return parseFloat(formatEther(rawBalance));
+}
+
+/**
+ * Reads the global fee accumulator (accFeePerShare) from the AMM.
+ */
+export async function getAccFeePerShare(ammAddress: string): Promise<number> {
+  const address = ammAddress as `0x${string}`;
+  const raw = await publicClient.readContract({
+    address,
+    abi: ammAbi,
+    functionName: 'accFeePerShare',
+  });
+  return parseFloat(formatEther(raw));
+}
+
+/**
+ * Reads the reward debt for a specific user from the AMM.
+ */
+export async function getRewardDebt(ammAddress: string, userAddress: string): Promise<number> {
+  const address = ammAddress as `0x${string}`;
+  const user = userAddress as `0x${string}`;
+  const raw = await publicClient.readContract({
+    address,
+    abi: ammAbi,
+    functionName: 'rewardDebt',
+    args: [user],
+  });
+  return parseFloat(formatEther(raw));
+}
+
+/**
+ * Reads the owner address from the AMM contract.
+ */
+export async function getAmmOwner(ammAddress: string): Promise<string> {
+  const address = ammAddress as `0x${string}`;
+  return await publicClient.readContract({
+    address,
+    abi: ammAbi,
+    functionName: 'owner',
+  }) as string;
+}
+
+/**
+ * Computes pending rewards off-chain using the MasterChef formula:
+ * pending = (lpBalance * accFeePerShare) - rewardDebt
+ *
+ * All values are WAD floats (already converted from 1e18).
+ */
+export function computePendingRewards(
+  lpBalance: number,
+  accFeePerShare: number,
+  rewardDebt: number,
+): number {
+  const pending = (lpBalance * accFeePerShare) - rewardDebt;
+  return Math.max(0, pending);
 }
 
 // ─── Event watcher ───────────────────────────────────────────────────────────

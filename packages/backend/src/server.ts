@@ -5,8 +5,11 @@ import { createServer } from 'http';
 import { config } from './config';
 import healthRoutes from './routes/health';
 import marketRoutes from './routes/marketRoutes';
+import userRoutes from './routes/userRoutes';
+import apiDocsRoutes from './routes/apiDocs';
 import webhookRoutes from './webhooks/goldskyHandler';
 import { errorHandler } from './middlewares/errorHandler';
+import { apiLimiter } from './middlewares/rateLimiter';
 import { initializeSocket } from './sockets/socketManager';
 import { startChainWatcher } from './services/chainService';
 
@@ -24,9 +27,14 @@ app.use(express.json({
 }));
 app.use(express.urlencoded({ extended: true }));
 
+// Rate limiting — 100 req/min per IP on all /api routes
+app.use('/api', apiLimiter);
+
 // Routes
 app.use('/api', healthRoutes);
 app.use('/api/markets', marketRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/docs', apiDocsRoutes);
 app.use('/api/webhooks', webhookRoutes);
 
 // Global Error Handler

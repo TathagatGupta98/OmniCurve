@@ -77,6 +77,35 @@ export const ammAbi = [
     outputs: [{ name: '', type: 'int256' }],
     stateMutability: 'view',
   },
+  // ─── Additional view functions (Section 3) ───
+  {
+    type: 'function',
+    name: 'accFeePerShare',
+    inputs: [],
+    outputs: [{ name: '', type: 'int256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'rewardDebt',
+    inputs: [{ name: 'user', type: 'address' }],
+    outputs: [{ name: '', type: 'int256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'owner',
+    inputs: [],
+    outputs: [{ name: '', type: 'address' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'lpToken',
+    inputs: [],
+    outputs: [{ name: '', type: 'address' }],
+    stateMutability: 'view',
+  },
   // ─── Events ───
   {
     type: 'event',
@@ -139,5 +168,25 @@ export const routerAbi = [
     inputs: [
       { name: 'final_price', type: 'int256', indexed: false },
     ],
+  },
+] as const;
+
+/**
+ * Minimal ABI for the LP Token (ERC-20) — balance and supply reads.
+ */
+export const lpTokenAbi = [
+  {
+    type: 'function',
+    name: 'balanceOf',
+    inputs: [{ name: 'account', type: 'address' }],
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
+  },
+  {
+    type: 'function',
+    name: 'totalSupply',
+    inputs: [],
+    outputs: [{ name: '', type: 'uint256' }],
+    stateMutability: 'view',
   },
 ] as const;
