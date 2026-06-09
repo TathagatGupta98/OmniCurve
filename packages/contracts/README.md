@@ -6,7 +6,7 @@
 
 | Contract | Address |
 |----------|---------|
-| AMM Implementation | `0x918dd757cfd276b08d054f43adb20d7320f4349d` |
+| AMM Implementation | `0xd74a08ebf625f864200bd63a88c43a12841c0c4c` |
 | Router Implementation | `0xeb9e1bd457a3ff85e6bdc68448bab5b604d65a92` |
 | LP Token Implementation | `0xdd3aec1a025c0748a66d2bc888074eee58881295` |
 | Factory | `0xa2e57ff3fdba560ae853279df511cd4fa4fb9d93` |

@@ -32,16 +32,20 @@ export async function getMarketState(ammAddress: string): Promise<{
 }> {
   const address = ammAddress as `0x${string}`;
 
-  const [rawMu, rawSigma, rawLiquidity] = await Promise.all([
+  // availableLiquidity is not exposed as a getter on deployed contracts —
+  // fall back to the DB value via a separate call at the use site.
+  const [rawMu, rawSigma] = await Promise.all([
     publicClient.readContract({ address, abi: ammAbi, functionName: 'globalMu' }),
     publicClient.readContract({ address, abi: ammAbi, functionName: 'globalSigma' }),
-    publicClient.readContract({ address, abi: ammAbi, functionName: 'availableLiquidity' }),
   ]);
+
+  // Read DB liquidity as fallback since contract has no availableLiquidity getter
+  const market = await prisma.market.findFirst({ where: { ammAddress } });
 
   return {
     mu: parseFloat(formatEther(rawMu)),
     sigma: parseFloat(formatEther(rawSigma)),
-    totalLiquidity: parseFloat(formatEther(rawLiquidity)),
+    totalLiquidity: market?.totalLiquidity ?? 0,
   };
 }
 
@@ -75,42 +79,62 @@ export async function getLpTokenBalance(ammAddress: string, userAddress: string)
 
 /**
  * Reads the global fee accumulator (accFeePerShare) from the AMM.
+ * Falls back to the DB market value if the contract getter is not deployed.
  */
 export async function getAccFeePerShare(ammAddress: string): Promise<number> {
   const address = ammAddress as `0x${string}`;
-  const raw = await publicClient.readContract({
-    address,
-    abi: ammAbi,
-    functionName: 'accFeePerShare',
-  });
-  return parseFloat(formatEther(raw));
+  try {
+    const raw = await publicClient.readContract({
+      address,
+      abi: ammAbi,
+      functionName: 'accFeePerShare',
+    });
+    return parseFloat(formatEther(raw));
+  } catch {
+    // accFeePerShare getter not deployed — use DB accumulator as proxy
+    const market = await prisma.market.findFirst({ where: { ammAddress } });
+    return market?.globalAccumulator ?? 0;
+  }
 }
 
 /**
  * Reads the reward debt for a specific user from the AMM.
+ * Falls back to the user's DB snapshot if the contract getter is not deployed.
  */
 export async function getRewardDebt(ammAddress: string, userAddress: string): Promise<number> {
   const address = ammAddress as `0x${string}`;
   const user = userAddress as `0x${string}`;
-  const raw = await publicClient.readContract({
-    address,
-    abi: ammAbi,
-    functionName: 'rewardDebt',
-    args: [user],
-  });
-  return parseFloat(formatEther(raw));
+  try {
+    const raw = await publicClient.readContract({
+      address,
+      abi: ammAbi,
+      functionName: 'rewardDebt',
+      args: [user],
+    });
+    return parseFloat(formatEther(raw));
+  } catch {
+    // rewardDebt getter not deployed — use user's DB accumulator snapshot as proxy
+    const dbUser = await prisma.user.findUnique({ where: { walletAddress: userAddress.toLowerCase() } });
+    return dbUser?.globalAccumulatorSnapshot ?? 0;
+  }
 }
 
 /**
  * Reads the owner address from the AMM contract.
+ * Falls back to OWNER_ADDRESS env var if the contract getter is not deployed.
  */
 export async function getAmmOwner(ammAddress: string): Promise<string> {
   const address = ammAddress as `0x${string}`;
-  return await publicClient.readContract({
-    address,
-    abi: ammAbi,
-    functionName: 'owner',
-  }) as string;
+  try {
+    return await publicClient.readContract({
+      address,
+      abi: ammAbi,
+      functionName: 'owner',
+    }) as string;
+  } catch {
+    // owner() getter not deployed — fall back to env-configured owner address
+    return config.OWNER_ADDRESS ?? '';
+  }
 }
 
 /**

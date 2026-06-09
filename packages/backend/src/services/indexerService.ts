@@ -65,19 +65,7 @@ export const handleStakePlaced = async (data: any) => {
 
   const direction: Direction = isYes ? 'ABOVE' : 'BELOW';
 
-  await prisma.position.create({
-    data: {
-      positionId,
-      userAddress,
-      marketId,
-      targetValueX,
-      direction,
-      tokensMinted,
-      stakeAmount: netStake,
-    },
-  });
-
-  // Update User's globalAccumulatorSnapshot
+  // Upsert user before creating position to satisfy FK constraint
   await prisma.user.upsert({
     where: { walletAddress: userAddress },
     update: {
@@ -87,6 +75,18 @@ export const handleStakePlaced = async (data: any) => {
       walletAddress: userAddress,
       globalAccumulatorSnapshot: newAccumulator,
       rolePreference: 'STAKER',
+    },
+  });
+
+  await prisma.position.create({
+    data: {
+      positionId,
+      userAddress,
+      marketId,
+      targetValueX,
+      direction,
+      tokensMinted,
+      stakeAmount: netStake,
     },
   });
 

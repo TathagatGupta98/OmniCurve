@@ -99,6 +99,12 @@ impl DistributionAmm {
         Ok(())
     }
 
+    pub fn owner(&self) -> Result<Address, Vec<u8>> { Ok(self.owner.get()) }
+    pub fn available_liquidity(&self) -> Result<I256, Vec<u8>> { Ok(self.available_liquidity.get()) }
+    pub fn acc_fee_per_share(&self) -> Result<I256, Vec<u8>> { Ok(self.acc_fee_per_share.get()) }
+    pub fn reward_debt(&self, user: Address) -> Result<I256, Vec<u8>> { Ok(self.reward_debt.getter(user).get()) }
+    pub fn is_resolved(&self) -> Result<bool, Vec<u8>> { Ok(self.is_resolved.get()) }
+    pub fn winning_token_id(&self) -> Result<U256, Vec<u8>> { Ok(self.winning_token_id.get()) }
     pub fn global_mu(&self) -> Result<I256, Vec<u8>> { Ok(self.global_mu.get()) }
     pub fn global_sigma(&self) -> Result<I256, Vec<u8>> { Ok(self.global_sigma.get()) }
 

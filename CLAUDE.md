@@ -296,7 +296,7 @@ All functions use I256 (signed 256-bit integer) with 18-decimal fixed-point (WAD
 ### Implementation Contracts (singletons)
 | Contract | Address |
 |----------|---------|
-| AMM Implementation | `0xdcdd8e30284d50a7df5d0f5d110bd57118c299aa` |
+| AMM Implementation | `0xd74a08ebf625f864200bd63a88c43a12841c0c4c` |
 | Router Implementation | `0x53ad98ecf5e8f9d80a2ec037297679bb3abf802e` |
 | LP Token Implementation | `0xcf8f9aef697550f67aa64369ed23dd1a8160baf2` |
 | Factory | `0x1bbdb700863309ab2588c9d64786bd0ac376d150` |

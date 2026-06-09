@@ -46,6 +46,13 @@ const envSchema = z.object({
   // ─── Goldsky (optional for local dev) ───
   GOLDSKY_GRAPHQL_ENDPOINT: z.string().optional().default(''),
   GOLDSKY_WEBHOOK_SECRET: z.string().optional().default(''),
+
+  // ─── Owner (fallback when contract owner() getter is not deployed) ───
+  OWNER_ADDRESS: z
+    .string()
+    .regex(/^0x[a-fA-F0-9]{40}$/, 'OWNER_ADDRESS must be a valid Ethereum address')
+    .optional()
+    .default('0x0000000000000000000000000000000000000000'),
 });
 
 const parsed = envSchema.safeParse(process.env);
