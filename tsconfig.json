@@ -16,10 +16,9 @@
     "verbatimModuleSyntax": true,
     "skipLibCheck": true,
     "noEmit": true,
-    "baseUrl": ".",
     "paths": {
-      "@omnicurve/types": ["packages/types/src/index.ts"],
-      "@omnicurve/types/*": ["packages/types/src/*"]
+      "@omnicurve/types": ["./packages/types/src/index.ts"],
+      "@omnicurve/types/*": ["./packages/types/src/*"]
     }
   }
 }
