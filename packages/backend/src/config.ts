@@ -40,6 +40,9 @@ const envSchema = z.object({
     .string()
     .regex(/^0x[a-fA-F0-9]{40}$/, 'USDC_ADDRESS must be a valid Ethereum address'),
 
+  // ─── CORS ───
+  CORS_ORIGINS: z.string().optional().default(''),
+
   // ─── Goldsky (optional for local dev) ───
   GOLDSKY_GRAPHQL_ENDPOINT: z.string().optional().default(''),
   GOLDSKY_WEBHOOK_SECRET: z.string().optional().default(''),

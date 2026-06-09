@@ -15,9 +15,26 @@ import { startChainWatcher } from './services/chainService';
 
 const app = express();
 
+// CORS allowlist — set CORS_ORIGINS as a comma-separated list in .env for production.
+// Falls back to localhost dev origins when the var is absent.
+const allowedOrigins = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(',').map((o) => o.trim())
+  : ['http://localhost:3000', 'http://localhost:5173'];
+
 // Middlewares
 app.use(helmet());
-app.use(cors());
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow server-to-server requests (no origin) and listed origins
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS: origin "${origin}" not allowed`));
+    }
+  },
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-owner-address', 'goldsky-webhook-signature'],
+}));
 
 // Capture raw body for signature verification
 app.use(express.json({
