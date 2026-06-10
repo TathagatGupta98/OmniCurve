@@ -115,7 +115,7 @@ export function LPPanel({ market }: LPPanelProps) {
   if (!address) {
     return (
       <div className="p-6 text-center">
-        <p className="text-xs font-mono text-[rgba(226,221,212,0.35)]">
+        <p className="text-xs font-mono text-[rgba(242,242,242,0.35)]">
           Connect wallet to provide liquidity
         </p>
       </div>
@@ -129,18 +129,18 @@ export function LPPanel({ market }: LPPanelProps) {
       <div className="p-5 space-y-4">
         {/* LP Stats Bar */}
         {lpStats && (
-          <div className="grid grid-cols-3 gap-3 text-center p-3 bg-[rgba(255,255,255,0.03)] rounded border border-[rgba(255,255,255,0.05)]">
+          <div className="grid grid-cols-3 gap-3 text-center p-3 bg-[#1E1E1E] rounded border border-[rgba(255,255,255,0.20)]">
             <div>
-              <p className="text-[9px] font-display tracking-widest text-[rgba(226,221,212,0.35)] uppercase mb-0.5">LP Balance</p>
-              <p className="font-mono text-xs text-[#FFB800]">{lpStats.lpTokenBalance.toFixed(4)}</p>
+              <p className="text-[9px] font-display tracking-widest text-[rgba(242,242,242,0.60)] uppercase mb-0.5">LP Balance</p>
+              <p className="font-mono text-xs text-[#C41230] font-600">{lpStats.lpTokenBalance.toFixed(4)}</p>
             </div>
             <div>
-              <p className="text-[9px] font-display tracking-widest text-[rgba(226,221,212,0.35)] uppercase mb-0.5">Pending Fees</p>
-              <p className="font-mono text-xs text-[#22D3A3]">${lpStats.pendingRewards.toFixed(4)}</p>
+              <p className="text-[9px] font-display tracking-widest text-[rgba(242,242,242,0.60)] uppercase mb-0.5">Pending Fees</p>
+              <p className="font-mono text-xs text-[#22D3A3] font-600">${lpStats.pendingRewards.toFixed(4)}</p>
             </div>
             <div>
-              <p className="text-[9px] font-display tracking-widest text-[rgba(226,221,212,0.35)] uppercase mb-0.5">Pool TVL</p>
-              <p className="font-mono text-xs text-[rgba(226,221,212,0.6)]">${totalLiqFloat.toFixed(2)}</p>
+              <p className="text-[9px] font-display tracking-widest text-[rgba(242,242,242,0.60)] uppercase mb-0.5">Pool TVL</p>
+              <p className="font-mono text-xs text-[rgba(242,242,242,0.85)]">${totalLiqFloat.toFixed(2)}</p>
             </div>
           </div>
         )}
@@ -175,20 +175,20 @@ export function LPPanel({ market }: LPPanelProps) {
                   />
                 </div>
                 {needsDistribution && depositAmt > 0 && (
-                  <p className="text-xs font-mono text-[#FFB800] bg-[rgba(255,184,0,0.06)] border border-[rgba(255,184,0,0.2)] rounded p-2">
+                  <p className="text-xs font-mono text-[#C41230] bg-[rgba(196,18,48,0.06)] border border-[rgba(196,18,48,0.2)] rounded p-2">
                     Set μ and σ above to initialize the pool distribution.
                   </p>
                 )}
               </>
             ) : (
-              <p className="text-xs font-mono text-[rgba(226,221,212,0.35)] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded p-3">
+              <p className="text-xs font-mono text-[rgba(242,242,242,0.70)] bg-[#1E1E1E] border border-[rgba(255,255,255,0.20)] rounded p-3">
                 Curve is locked after first trade — distribution parameters are ignored.
               </p>
             )}
             {depositAmt > 0 && (
-              <div className="text-xs font-mono flex justify-between text-[rgba(226,221,212,0.4)]">
+              <div className="text-xs font-mono flex justify-between text-[rgba(242,242,242,0.65)]">
                 <span>Est. LP tokens</span>
-                <span className="text-[#E2DDD4]">{estimatedShares.toFixed(4)}</span>
+                <span className="text-[#F2F2F2] font-600">{estimatedShares.toFixed(4)}</span>
               </div>
             )}
             <Button
@@ -205,11 +205,11 @@ export function LPPanel({ market }: LPPanelProps) {
 
         {tab === 'withdraw' && (
           <>
-            <div className="flex items-center justify-between text-xs font-mono text-[rgba(226,221,212,0.4)]">
+            <div className="flex items-center justify-between text-xs font-mono text-[rgba(242,242,242,0.65)]">
               <span>Your LP balance</span>
               <button
                 type="button"
-                className="font-mono text-[#FFB800] hover:underline disabled:no-underline disabled:opacity-50"
+                className="font-mono text-[#C41230] hover:underline disabled:no-underline disabled:opacity-50"
                 disabled={lpBalance <= 0}
                 onClick={() => setWithdrawAmount(String(lpBalance))}
               >
@@ -226,13 +226,13 @@ export function LPPanel({ market }: LPPanelProps) {
             />
             {withdrawAmt > 0 && !exceedsBalance && (
               <div className="space-y-1.5">
-                <div className="text-xs font-mono flex justify-between text-[rgba(226,221,212,0.4)]">
+                <div className="text-xs font-mono flex justify-between text-[rgba(242,242,242,0.65)]">
                   <span>Est. USDC received</span>
-                  <span className="text-[#FFB800]">${estimatedUsdc.toFixed(4)}</span>
+                  <span className="text-[#C41230] font-600">${estimatedUsdc.toFixed(4)}</span>
                 </div>
-                <div className="text-xs font-mono flex justify-between text-[rgba(226,221,212,0.4)]">
+                <div className="text-xs font-mono flex justify-between text-[rgba(242,242,242,0.65)]">
                   <span>Est. network fee</span>
-                  <span className="text-[rgba(226,221,212,0.6)]">
+                  <span className="text-[rgba(242,242,242,0.80)]">
                     {withdrawGas ? `~${Number(formatEther(withdrawGas)).toFixed(6)} ETH` : '—'}
                   </span>
                 </div>
@@ -252,14 +252,14 @@ export function LPPanel({ market }: LPPanelProps) {
 
         {tab === 'claim' && (
           <>
-            <div className="p-4 rounded border border-[rgba(34,211,163,0.15)] bg-[rgba(34,211,163,0.04)]">
-              <p className="text-xs font-display tracking-wider text-[rgba(226,221,212,0.45)] uppercase mb-1">
+            <div className="p-4 rounded border border-[rgba(34,211,163,0.40)] bg-[rgba(34,211,163,0.10)]">
+              <p className="text-xs font-display tracking-wider text-[rgba(242,242,242,0.70)] uppercase mb-1">
                 Pending Fees
               </p>
-              <p className="font-mono text-xl text-[#22D3A3]">
+              <p className="font-mono text-xl text-[#22D3A3] font-600">
                 ${lpStats?.pendingRewards.toFixed(6) ?? '0.000000'}
               </p>
-              <p className="text-xs font-mono text-[rgba(226,221,212,0.35)] mt-1">
+              <p className="text-xs font-mono text-[rgba(242,242,242,0.60)] mt-1">
                 USDC earned from trading fees
               </p>
             </div>
@@ -279,7 +279,7 @@ export function LPPanel({ market }: LPPanelProps) {
           <p
             className={`text-xs font-mono rounded p-3 border ${
               isUserRejection(error)
-                ? 'text-[rgba(226,221,212,0.6)] bg-[rgba(255,255,255,0.03)] border-[rgba(255,255,255,0.1)]'
+                ? 'text-[rgba(242,242,242,0.75)] bg-[#1E1E1E] border-[rgba(255,255,255,0.20)]'
                 : 'text-[#FF4560] bg-[rgba(255,69,96,0.08)] border-[rgba(255,69,96,0.2)]'
             }`}
           >
@@ -295,7 +295,7 @@ export function LPPanel({ market }: LPPanelProps) {
                 href={`https://sepolia.arbiscan.io/tx/${txHash}`}
                 target="_blank"
                 rel="noreferrer"
-                className="text-xs font-mono text-[rgba(226,221,212,0.4)] hover:text-[#FFB800] block"
+                className="text-xs font-mono text-[rgba(242,242,242,0.65)] hover:text-[#C41230] block"
               >
                 View on Arbiscan ↗
               </a>

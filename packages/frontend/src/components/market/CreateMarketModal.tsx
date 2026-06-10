@@ -53,8 +53,8 @@ export function CreateMarketModal({ open, onClose }: CreateMarketModalProps) {
             </svg>
           </div>
           <div>
-            <p className="font-display font-600 text-[#E2DDD4] mb-1">Market Created!</p>
-            <p className="text-xs font-mono text-[rgba(226,221,212,0.45)]">
+            <p className="font-display font-600 text-[#F2F2F2] mb-1">Market Created!</p>
+            <p className="text-xs font-mono text-[rgba(242,242,242,0.45)]">
               Your market is live. You&apos;ll be redirected shortly.
             </p>
           </div>
@@ -69,11 +69,11 @@ export function CreateMarketModal({ open, onClose }: CreateMarketModalProps) {
           />
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-display tracking-wider text-[rgba(226,221,212,0.45)] uppercase">
+            <label className="text-xs font-display tracking-wider text-[rgba(242,242,242,0.45)] uppercase">
               Category
             </label>
             <select
-              className="bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.08)] text-[#E2DDD4] text-sm rounded py-2.5 px-3 focus:outline-none focus:border-[rgba(255,184,0,0.5)] transition-colors"
+              className="bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.08)] text-[#F2F2F2] text-sm rounded py-2.5 px-3 focus:outline-none focus:border-[rgba(196,18,48,0.5)] transition-colors"
               {...register('category')}
             >
               <option value="Crypto">Crypto</option>
@@ -90,7 +90,7 @@ export function CreateMarketModal({ open, onClose }: CreateMarketModalProps) {
             error={errors.sigmaMin?.message}
             {...register('sigmaMin')}
           />
-          <p className="text-xs font-mono text-[rgba(226,221,212,0.35)] -mt-2">
+          <p className="text-xs font-mono text-[rgba(242,242,242,0.35)] -mt-2">
             Minimum standard deviation — prevents LP from setting unrealistically tight distributions.
           </p>
 
@@ -98,7 +98,7 @@ export function CreateMarketModal({ open, onClose }: CreateMarketModalProps) {
             <p
               className={`text-xs font-mono rounded p-3 border ${
                 isUserRejection(error)
-                  ? 'text-[rgba(226,221,212,0.6)] bg-[rgba(255,255,255,0.03)] border-[rgba(255,255,255,0.1)]'
+                  ? 'text-[rgba(242,242,242,0.6)] bg-[rgba(255,255,255,0.03)] border-[rgba(255,255,255,0.1)]'
                   : 'text-[#FF4560] bg-[rgba(255,69,96,0.08)] border-[rgba(255,69,96,0.2)]'
               }`}
             >

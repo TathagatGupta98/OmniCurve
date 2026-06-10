@@ -27,12 +27,12 @@ export function Slider({ value, min, max, step = 0.01, onChange, label, displayV
       {(label || displayValue) && (
         <div className="flex justify-between items-center">
           {label && (
-            <span className="text-xs font-display tracking-wider text-[rgba(226,221,212,0.45)] uppercase">
+            <span className="text-xs font-display tracking-wider text-[rgba(242,242,242,0.45)] uppercase">
               {label}
             </span>
           )}
           {displayValue && (
-            <span className="text-sm font-mono text-[#FFB800]">{displayValue}</span>
+            <span className="text-sm font-mono text-[#C41230]">{displayValue}</span>
           )}
         </div>
       )}
@@ -69,7 +69,7 @@ export function Slider({ value, min, max, step = 0.01, onChange, label, displayV
         />
         {/* Thumb */}
         <div
-          className="absolute w-3.5 h-3.5 rounded-full border-2 border-[#FFB800] bg-[#060810] pointer-events-none"
+          className="absolute w-3.5 h-3.5 rounded-full border-2 border-[#C41230] bg-[#0A0A0A] pointer-events-none"
           style={{ left: `calc(${pct}% - 7px)` }}
         />
       </div>

@@ -1,26 +1,47 @@
+import { useEffect } from 'react'
 import { Outlet } from 'react-router-dom'
 import { Navbar } from './Navbar'
 import { ToastProvider } from '@/components/ui/Toast'
+import { useTheme } from '@/hooks/useTheme'
+import LiquidChromeBackground from '@/components/ui/LiquidChromeBackground'
 
 export default function PageWrapper() {
+  const { isDark } = useTheme()
+
+  useEffect(() => {
+    document.body.classList.add('chrome-bg')
+    return () => document.body.classList.remove('chrome-bg')
+  }, [])
+
   return (
     <ToastProvider>
-      <div className="min-h-screen flex flex-col">
+      <LiquidChromeBackground isDark={isDark} />
+      <div className="min-h-screen flex flex-col transition-colors duration-300">
         <Navbar />
         <main className="flex-1">
           <Outlet />
         </main>
-        <footer className="border-t border-[rgba(255,255,255,0.06)] py-8 mt-16">
+        <footer className={`border-t py-8 mt-16 transition-colors duration-300 ${
+          isDark
+            ? 'border-[rgba(255,255,255,0.14)]'
+            : 'border-[rgba(0,0,0,0.18)]'
+        }`}>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-xs font-mono text-[rgba(226,221,212,0.3)]">
+            <p className={`text-xs font-mono transition-colors duration-300 ${
+              isDark ? 'text-[rgba(242,242,242,0.55)]' : 'text-[rgba(17,17,17,0.50)]'
+            }`}>
               OmniCurve — Arbitrum Sepolia Testnet
             </p>
-            <div className="flex items-center gap-4 text-xs font-mono text-[rgba(226,221,212,0.3)]">
+            <div className={`flex items-center gap-4 text-xs font-mono transition-colors duration-300 ${
+              isDark ? 'text-[rgba(242,242,242,0.55)]' : 'text-[rgba(17,17,17,0.50)]'
+            }`}>
               <a
                 href="https://sepolia.arbiscan.io/address/0x1bbdb700863309ab2588c9d64786bd0ac376d150"
                 target="_blank"
                 rel="noreferrer"
-                className="hover:text-[#FFB800] transition-colors"
+                className={`transition-colors duration-200 ${
+                  isDark ? 'hover:text-[#C41230]' : 'hover:text-[#C41230]'
+                }`}
               >
                 Factory ↗
               </a>

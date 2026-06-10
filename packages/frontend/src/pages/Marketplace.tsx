@@ -2,14 +2,52 @@ import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { useAccount } from 'wagmi'
 import { useMarkets } from '@/hooks/useMarkets'
+import { useTheme } from '@/hooks/useTheme'
 import { MarketCard } from '@/components/market/MarketCard'
 import { CreateMarketModal } from '@/components/market/CreateMarketModal'
 import { Button } from '@/components/ui/Button'
 
 const CATEGORIES = ['All', 'Crypto', 'Macro', 'Sports', 'Other']
 
+const DARK = {
+  heading:      'text-[#F2F2F2]',
+  subheading:   'text-[rgba(242,242,242,0.60)]',
+  searchBg:     'bg-[#1C1C1C] border-[rgba(255,255,255,0.18)] text-[#F2F2F2] placeholder:text-[rgba(242,242,242,0.40)] focus:border-[rgba(196,18,48,0.55)]',
+  searchIcon:   'text-[rgba(242,242,242,0.50)]',
+  resolvedOn:   'border-[rgba(196,18,48,0.50)] text-[#C41230] bg-[rgba(196,18,48,0.12)]',
+  resolvedOff:  'border-[rgba(255,255,255,0.18)] text-[rgba(242,242,242,0.60)] hover:border-[rgba(255,255,255,0.30)]',
+  tabBorder:    'border-[rgba(255,255,255,0.15)]',
+  tabActive:    'text-[#F2F2F2]',
+  tabInactive:  'text-[rgba(242,242,242,0.50)] hover:text-[rgba(242,242,242,0.80)]',
+  tabIndicator: 'bg-[#C41230]',
+  skeleton:     'bg-[#1C1C1C] border-[rgba(255,255,255,0.15)]',
+  errorText:    'text-[#FF4560]',
+  errorSub:     'text-[rgba(242,242,242,0.55)]',
+  emptyText:    'text-[rgba(242,242,242,0.55)]',
+} as const
+
+const LIGHT = {
+  heading:      'text-[#111111]',
+  subheading:   'text-[rgba(17,17,17,0.60)]',
+  searchBg:     'bg-white border-[rgba(0,0,0,0.20)] text-[#111111] placeholder:text-[rgba(17,17,17,0.40)] focus:border-[rgba(196,18,48,0.50)]',
+  searchIcon:   'text-[rgba(17,17,17,0.45)]',
+  resolvedOn:   'border-[rgba(196,18,48,0.45)] text-[#C41230] bg-[rgba(196,18,48,0.10)]',
+  resolvedOff:  'border-[rgba(0,0,0,0.20)] text-[rgba(17,17,17,0.60)] hover:border-[rgba(0,0,0,0.30)]',
+  tabBorder:    'border-[rgba(0,0,0,0.18)]',
+  tabActive:    'text-[#111111]',
+  tabInactive:  'text-[rgba(17,17,17,0.50)] hover:text-[rgba(17,17,17,0.80)]',
+  tabIndicator: 'bg-[#C41230]',
+  skeleton:     'bg-white border-[rgba(0,0,0,0.18)]',
+  errorText:    'text-[#dc2626]',
+  errorSub:     'text-[rgba(17,17,17,0.55)]',
+  emptyText:    'text-[rgba(17,17,17,0.55)]',
+} as const
+
 export default function Marketplace() {
   const { address } = useAccount()
+  const { isDark } = useTheme()
+  const T = isDark ? DARK : LIGHT
+
   const [category, setCategory] = useState('All')
   const [showResolved, setShowResolved] = useState(false)
   const [search, setSearch] = useState('')
@@ -29,10 +67,10 @@ export default function Marketplace() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4 mb-8">
         <div>
-          <h1 className="font-display font-800 text-3xl text-[#E2DDD4] tracking-tight">
+          <h1 className={`font-display font-800 text-3xl tracking-tight transition-colors duration-300 ${T.heading}`}>
             Markets
           </h1>
-          <p className="text-sm font-serif italic text-[rgba(226,221,212,0.4)] mt-1">
+          <p className={`text-sm font-serif italic mt-1 transition-colors duration-300 ${T.subheading}`}>
             Continuous distribution prediction markets on Arbitrum
           </p>
         </div>
@@ -46,7 +84,7 @@ export default function Marketplace() {
       {/* Search + filters */}
       <div className="flex flex-col sm:flex-row gap-4 mb-6">
         <div className="relative flex-1">
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-[rgba(226,221,212,0.3)]" width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <svg className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors duration-300 ${T.searchIcon}`} width="14" height="14" viewBox="0 0 14 14" fill="none">
             <circle cx="6" cy="6" r="5" stroke="currentColor" strokeWidth="1.5"/>
             <path d="M10 10l3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
           </svg>
@@ -55,16 +93,14 @@ export default function Marketplace() {
             placeholder="Search markets..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.08)] text-[#E2DDD4] text-sm rounded placeholder:text-[rgba(226,221,212,0.25)] focus:outline-none focus:border-[rgba(255,184,0,0.4)]"
+            className={`w-full pl-9 pr-4 py-2.5 border text-sm rounded transition-colors duration-300 focus:outline-none ${T.searchBg}`}
           />
         </div>
         <div className="flex items-center gap-1">
           <button
             onClick={() => setShowResolved(!showResolved)}
-            className={`px-3 py-2 text-xs font-mono rounded border transition-colors ${
-              showResolved
-                ? 'border-[rgba(255,184,0,0.3)] text-[#FFB800] bg-[rgba(255,184,0,0.08)]'
-                : 'border-[rgba(255,255,255,0.08)] text-[rgba(226,221,212,0.4)] hover:border-[rgba(255,255,255,0.15)]'
+            className={`px-3 py-2 text-xs font-mono rounded border transition-colors duration-200 ${
+              showResolved ? T.resolvedOn : T.resolvedOff
             }`}
           >
             {showResolved ? '✓' : ''} Resolved
@@ -73,22 +109,20 @@ export default function Marketplace() {
       </div>
 
       {/* Category tabs */}
-      <div className="flex gap-1 mb-8 border-b border-[rgba(255,255,255,0.06)] pb-0">
+      <div className={`flex gap-1 mb-8 border-b pb-0 transition-colors duration-300 ${T.tabBorder}`}>
         {CATEGORIES.map((cat) => (
           <button
             key={cat}
             onClick={() => setCategory(cat)}
-            className={`relative px-4 py-2.5 text-xs font-display tracking-wider uppercase transition-colors ${
-              category === cat
-                ? 'text-[#E2DDD4]'
-                : 'text-[rgba(226,221,212,0.35)] hover:text-[rgba(226,221,212,0.6)]'
+            className={`relative px-4 py-2.5 text-xs font-display tracking-wider uppercase transition-colors duration-200 ${
+              category === cat ? T.tabActive : T.tabInactive
             }`}
           >
             {cat}
             {category === cat && (
               <motion.div
                 layoutId="market-tab"
-                className="absolute bottom-0 left-0 right-0 h-px bg-[#FFB800]"
+                className={`absolute bottom-0 left-0 right-0 h-px transition-colors duration-300 ${T.tabIndicator}`}
                 transition={{ type: 'spring', stiffness: 500, damping: 35 }}
               />
             )}
@@ -100,19 +134,19 @@ export default function Marketplace() {
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {[...Array(6)].map((_, i) => (
-            <div key={i} className="h-[240px] bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.06)] rounded animate-pulse" />
+            <div key={i} className={`h-[240px] border rounded animate-pulse transition-colors duration-300 ${T.skeleton}`} />
           ))}
         </div>
       ) : error ? (
         <div className="text-center py-20">
-          <p className="font-mono text-sm text-[#FF4560]">Failed to load markets</p>
-          <p className="font-mono text-xs text-[rgba(226,221,212,0.35)] mt-2">
+          <p className={`font-mono text-sm transition-colors duration-300 ${T.errorText}`}>Failed to load markets</p>
+          <p className={`font-mono text-xs mt-2 transition-colors duration-300 ${T.errorSub}`}>
             Make sure the backend is running on port 3001
           </p>
         </div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-20">
-          <p className="font-mono text-sm text-[rgba(226,221,212,0.4)]">No markets found</p>
+          <p className={`font-mono text-sm transition-colors duration-300 ${T.emptyText}`}>No markets found</p>
         </div>
       ) : (
         <motion.div
