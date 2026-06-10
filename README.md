@@ -59,9 +59,8 @@ The core of **OmniCurve** translates the continuous Gaussian distribution into a
     </li>
     <li><a href="#6-deployment">Deployment</a></li>
     <li><a href="#7-project-status">Project Status</a></li>
-    <li><a href="#8-contributing">Contributing</a></li>
-    <li><a href="#9-project-license">Project License</a></li>
-    <li><a href="#10-references">References</a></li>
+    <li><a href="#8-project-license">Project License</a></li>
+    <li><a href="#9-references">References</a></li>
 </ol>
 
 ---
@@ -194,22 +193,17 @@ The protocol follows a modular architecture with a clear separation between trad
 
 **User Journey:**
 
-1. **Discover or Create:** Users browse existing markets or create new ones via the Factory
-2. **Market Page:** Each market has a dedicated interface with a live Gaussian curve visualization
-3. **Trade:** Buy YES or NO positions at any continuous strike price
-4. **Provide Liquidity:** Deposit USDC as collateral to underwrite trades and earn fees
-5. **Monitor:** Watch the curve shift in real-time as bets move $\mu$ and $\sigma$
-6. **Settle:** After resolution, claim winnings or release losing collateral
+![User flow chart](./images/UserFlow.png)
 
 ### 2.2 Contract System: EIP-1167 Proxy Factory
 
-The protocol uses an **EIP-1167 minimal proxy (clone) factory pattern**. Implementation contracts are deployed once; the Factory clones them per-market via CREATE2, giving each market its own trio of proxy contracts with independent storage.
+The protocol uses an **EIP-1167 minimal proxy (clone) factory pattern**. Implementation contracts are deployed once; the Factory clones them per-market via CREATE2, giving each market its own trio of proxy contracts with independent storage. Since in rust contracts via stylus, CREATE2 cannot be directly implemented, so this is the flow of the function that creates new markets - 
 
 ```
 OmniCurveFactory.createMarket(usdc, sigma_min)
-  ├── deploys AMM Proxy      ──DELEGATECALL──→ AMM Implementation
-  ├── deploys Router Proxy   ──DELEGATECALL──→ Router Implementation
-  ├── deploys LP Token Proxy ──DELEGATECALL──→ LP Token Implementation
+  ├── deploys AMM Proxy      ──DELEGATECALL──→ AMM Implementation (this is cloned into new instances of AMM proxy)
+  ├── deploys Router Proxy   ──DELEGATECALL──→ Router Implementation (this is cloned into new instances of Router Proxy)
+  ├── deploys LP Token Proxy ──DELEGATECALL──→ LP Token Implementation (this is cloend into new instances of LP token proxy)
   ├── initializes & wires all three:
   │     AMM ↔ Router (bidirectional)
   │     AMM → LP Token (mint/burn authority)
@@ -238,20 +232,7 @@ Trading in OmniCurve allows users to express beliefs about continuous outcomes b
 
 **Execution Flow:**
 
-1. A trader calls `buy_yes` or `buy_no` with their chosen strike price $x$ and USDC stake
-2. The Router reads the current $\mu$ and $\sigma$ from the AMM (the *pre-update* curve state)
-3. The on-chain Gaussian CDF computes the price:
-
-$$P_{\text{YES}} = 1 - \Phi\left(\frac{x - \mu}{\sigma}\right) \qquad P_{\text{NO}} = \Phi\left(\frac{x - \mu}{\sigma}\right)$$
-
-4. Trade cost is calculated:
-
-$$\text{raw\_cost} = P \times \text{amount} \qquad \text{fee} = \text{raw\_cost} \times 1\% \qquad \text{total} = \text{raw\_cost} + \text{fee}$$
-
-5. USDC is transferred from the trader to the AMM
-6. The fee is sent to the AMM's fee accumulator for LP distribution
-7. The AMM's `underwrite_trade` locks collateral **and folds the bet into the stake-weighted curve** (weight = premium, x = strike), then recomputes $\mu/\sigma$ and emits `CurveUpdated`
-8. Position tokens are minted to the trader (ERC-1155-style, keyed by `keccak256(market_id, target_x, is_yes)`)
+![User who bets follows these steps](./images/BettorFlow.png)
 
 **Token IDs:** YES = 1, NO = 2
 
@@ -265,20 +246,7 @@ Liquidity providers in OmniCurve are pure collateral underwriters — they fund 
 
 Unlike traditional AMMs where LP deposits affect the trading curve, OmniCurve LP deposits are **strictly curve-neutral**. The `target_mu` and `target_sigma` parameters exist for ABI backward compatibility but are ignored — LPs always provide at the current $\mu/\sigma$ and never shift the curve.
 
-**Add Liquidity Flow:**
-
-1. LP calls `add_liquidity` with a USDC amount
-2. USDC is transferred from the LP to the AMM contract
-3. LP tokens (non-transferable ERC-20, "OCLP") are minted proportionally
-4. The fee accumulator snapshot (`reward_debt`) is set for the LP
-5. $\mu$ and $\sigma$ remain unchanged
-
-**Remove Liquidity Flow:**
-
-1. LP calls `remove_liquidity` with the number of LP tokens to burn
-2. Solvency is checked: withdrawal cannot exceed available (unlocked) liquidity
-3. LP tokens are burned, USDC is returned proportionally
-4. Pending fee earnings are settled
+![Add and remove liquidity flow diagrams](./images/LiquidityFlow.png)
 
 ### 2.5 Fee Distribution Infrastructure
 
@@ -493,39 +461,21 @@ cast send <AMM_PROXY> "setDistribution(int256,int256)" <MU_WAD> <SIGMA_WAD> \
 - **Current Stage:** The protocol is a **hackathon proof-of-concept** deployed on Arbitrum Sepolia with a live market ("What will ETH price be by the end of 2026?").
 - **Audits:** The smart contracts have **not undergone a formal security audit**. Use at your own risk.
 - **Testing:** Rust unit tests cover the mathematical core (`math_core.rs`). Foundry integration tests exist for cross-contract interactions. The mathematical implementation provides ~11 significant digits of precision against reference values.
-- **Known Limitations:**
-    - `claim_fees` has a WAD-to-USDC conversion bug (missing `/1e12` — fees are locked)
-    - No slippage protection on trades
-    - Resolution is fully manual (no oracle integration)
-    - Positions are non-transferable
 
 ---
 
-## 8. Contributing
-
-Contributions are welcome! To contribute:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/NewFeature`)
-3. Make your changes and commit them (`git commit -m 'Add NewFeature'`)
-4. Ensure changes include corresponding tests
-5. Push to your branch (`git push origin feature/NewFeature`)
-6. Open a Pull Request for review
-
----
-
-## 9. Project License
+## 8. Project License
 
 This project is licensed under the **MIT License**.
 
 ---
 
-## 10. References
+## 9. References
 
 - **Gaussian Distribution (Normal Distribution):** [Wikipedia — Normal Distribution](https://en.wikipedia.org/wiki/Normal_distribution)
 - **Abramowitz & Stegun Error Function Approximation:** Handbook of Mathematical Functions, Formula 7.1.26
 - **EIP-1167 Minimal Proxy Standard:** [EIP-1167](https://eips.ethereum.org/EIPS/eip-1167)
 - **Arbitrum Stylus Documentation:** [Arbitrum Stylus](https://docs.arbitrum.io/stylus/gentle-introduction)
 - **MasterChef Fee Distribution Pattern:** [SushiSwap MasterChef](https://docs.sushi.com/)
+- **Distribution Market Design:** [Paradigm Distribution Market Research](https://www.paradigm.xyz/2024/12/distribution-markets)
 - **Prediction Market Design:** [Paradigm PM-AMM Research](https://www.paradigm.xyz/2024/11/pm-amm)
-
