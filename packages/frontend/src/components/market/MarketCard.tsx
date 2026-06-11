@@ -21,21 +21,19 @@ export function MarketCard({ market }: MarketCardProps) {
         to={`/markets/${market.marketId}`}
         className="group block rounded border transition-all duration-200"
         style={{
-          background: 'var(--bg-surface)',
-          borderColor: 'var(--border)',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.18)',
+          background: '#FFFFFF',
+          borderColor: 'rgba(62,44,30,0.14)',
+          boxShadow: '0 8px 28px rgba(62,44,30,0.10)',
         }}
         onMouseEnter={(e) => {
           const el = e.currentTarget
-          el.style.borderColor = 'rgba(196,18,48,0.55)'
-          el.style.background = 'var(--bg-surface-2)'
-          el.style.boxShadow = '0 12px 36px rgba(196,18,48,0.20)'
+          el.style.borderColor = 'rgba(200,16,46,0.55)'
+          el.style.boxShadow = '0 12px 36px rgba(200,16,46,0.20)'
         }}
         onMouseLeave={(e) => {
           const el = e.currentTarget
-          el.style.borderColor = 'var(--border)'
-          el.style.background = 'var(--bg-surface)'
-          el.style.boxShadow = '0 4px 16px rgba(0,0,0,0.18)'
+          el.style.borderColor = 'rgba(62,44,30,0.14)'
+          el.style.boxShadow = '0 8px 28px rgba(62,44,30,0.10)'
         }}
       >
         {/* Mini chart */}

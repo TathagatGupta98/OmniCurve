@@ -13,7 +13,9 @@ interface SliderProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'type'
 export function Slider({ value, min, max, step = 0.01, onChange, label, displayValue, ...props }: SliderProps) {
   const ref = useRef<HTMLInputElement>(null)
 
-  const pct = max === min ? 0 : ((value - min) / (max - min)) * 100
+  // Clamp: the bound value may legitimately sit outside [min, max] (e.g. a
+  // typed strike beyond the slider window) — peg the thumb at the track edge.
+  const pct = max === min ? 0 : Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100))
 
   const handleChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {

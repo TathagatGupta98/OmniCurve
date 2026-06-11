@@ -37,7 +37,7 @@ const LIGHT = {
   tabActive:    'text-[#231812]',
   tabInactive:  'text-[rgba(35,24,18,0.50)] hover:text-[rgba(35,24,18,0.80)]',
   tabIndicator: 'bg-[#C8102E]',
-  skeleton:     'bg-[#FDF8EE] border-[rgba(62,44,30,0.18)]',
+  skeleton:     'bg-white border-[rgba(62,44,30,0.14)]',
   errorText:    'text-[#B42318]',
   errorSub:     'text-[rgba(35,24,18,0.55)]',
   emptyText:    'text-[rgba(35,24,18,0.55)]',

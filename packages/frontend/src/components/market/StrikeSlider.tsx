@@ -19,13 +19,16 @@ export function StrikeSlider({ value, min, max, mu, sigma, onChange }: StrikeSli
     <div className="space-y-3">
       <div className="flex items-end gap-3">
         <div className="flex-1">
+          {/* Typed strikes are unrestricted (any price ≥ 0) — only the slider
+              below is windowed to μ ± 3σ for comfortable dragging. */}
           <Input
             label="Strike Price"
             type="number"
             value={value}
+            min={0}
             onChange={(e) => {
               const v = parseFloat(e.target.value)
-              if (!isNaN(v)) onChange(Math.max(min, Math.min(max, v)))
+              if (!isNaN(v)) onChange(Math.max(0, v))
             }}
             step={sigma / 10}
           />
