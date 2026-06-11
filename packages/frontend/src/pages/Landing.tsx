@@ -5,6 +5,12 @@ import { useMarkets } from '@/hooks/useMarkets'
 import { ConnectButton } from '@/components/wallet/ConnectButton'
 import ShaderBackground from '@/components/ui/ShaderBackground'
 
+const fadeUp = (delay: number, duration = 0.7) => ({
+  initial: { opacity: 0, y: 28 },
+  animate: { opacity: 1, y: 0 },
+  transition: { delay, duration, ease: [0.22, 1, 0.36, 1] },
+})
+
 export default function Landing() {
   const { data: markets } = useMarkets()
 
@@ -21,7 +27,10 @@ export default function Landing() {
       <ShaderBackground darkMode={true} />
 
       {/* ── Nav ── */}
-      <header className="fixed top-0 left-0 right-0 z-40 px-6 h-14 flex items-center justify-between border-b backdrop-blur-md bg-[rgba(15,15,15,0.95)] border-[rgba(255,255,255,0.14)]">
+      <motion.header
+        className="fixed top-0 left-0 right-0 z-40 px-6 h-14 flex items-center justify-between border-b backdrop-blur-md bg-[rgba(15,15,15,0.95)] border-[rgba(255,255,255,0.14)]"
+        {...fadeUp(3.5, 1)}
+      >
         <span className="font-display font-800 text-sm tracking-wider text-[#F2F2F2]">
           OMNI<span className="text-[#C41230]">CURVE</span>
         </span>
@@ -36,7 +45,7 @@ export default function Landing() {
 
           <ConnectButton />
         </div>
-      </header>
+      </motion.header>
 
       {/* ── Hero ── */}
       <main className="flex-1 flex flex-col items-center justify-center pt-14 px-6 relative">
@@ -57,9 +66,7 @@ export default function Landing() {
               fontSize: 'clamp(2.4rem, 6.5vw, 5.5rem)',
               textShadow: '0 2px 32px rgba(8,2,2,0.98), 0 0 64px rgba(8,2,2,0.85)',
             }}
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+            {...fadeUp(0.5, 1)}
           >
             Every Outcome, One Curve
           </motion.h1>
@@ -67,18 +74,14 @@ export default function Landing() {
           <motion.p
             className="font-serif italic text-base sm:text-lg max-w-md mx-auto leading-relaxed text-[rgba(255,245,244,0.80)]"
             style={{ textShadow: '0 1px 18px rgba(8,2,2,0.96)' }}
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.75, duration: 0.55 }}
+            {...fadeUp(1.5, 1)}
           >
             One pool. Every strike price. Priced continuously by the Gaussian curve.
           </motion.p>
 
           <motion.div
             className="flex flex-col sm:flex-row gap-3 justify-center"
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.1, duration: 0.5 }}
+            {...fadeUp(2.5, 1)}
           >
             <Link
               to="/markets"
@@ -98,9 +101,7 @@ export default function Landing() {
 
           <motion.div
             className="grid grid-cols-3 gap-8 max-w-xs mx-auto pt-8 border-t border-[rgba(255,255,255,0.20)]"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.6, duration: 0.6 }}
+            {...fadeUp(2.5, 1)}
           >
             {[
               { value: markets?.length ?? 0,                    label: 'Markets'  },
@@ -124,7 +125,10 @@ export default function Landing() {
       </main>
 
       {/* ── Tech strip ── */}
-      <div className="border-t py-4 px-6 border-[rgba(255,255,255,0.14)]">
+      <motion.div
+        className="border-t py-4 px-6 border-[rgba(255,255,255,0.14)]"
+        {...fadeUp(3.5, 1)}
+      >
         <div className="max-w-4xl mx-auto flex flex-wrap items-center justify-center gap-6 text-[10px] font-mono tracking-wider uppercase text-[rgba(255,245,244,0.45)]">
           <span>Arbitrum Stylus</span>
           <span>·</span>
@@ -136,7 +140,7 @@ export default function Landing() {
           <span>·</span>
           <span>Non-Custodial</span>
         </div>
-      </div>
+      </motion.div>
     </div>
   )
 }
