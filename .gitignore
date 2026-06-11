@@ -35,3 +35,4 @@ cache/
 broadcast/
 packages/contracts/lib/
 .playwright-mcp
+.claude
