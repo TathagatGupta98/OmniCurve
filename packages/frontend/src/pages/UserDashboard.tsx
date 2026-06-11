@@ -6,41 +6,45 @@ import { useTheme } from '@/hooks/useTheme'
 import { Badge } from '@/components/ui/Badge'
 
 const DARK = {
-  walletCard:      'bg-[#111111] border-[rgba(255,255,255,0.08)]',
+  walletCard:      'bg-[rgba(10,10,10,0.55)] backdrop-blur-md border-[rgba(255,255,255,0.10)]',
   walletLabel:     'text-[rgba(242,242,242,0.35)]',
   walletAddress:   'text-[#F2F2F2]',
   walletValue:     'text-[#C41230]',
   sectionHeading:  'text-[#F2F2F2]',
-  skeleton:        'bg-[#111111]',
+  skeleton:        'bg-[rgba(10,10,10,0.50)]',
   emptyBorder:     'border-[rgba(255,255,255,0.08)]',
   emptyText:       'text-[rgba(242,242,242,0.35)]',
   emptyLink:       'text-[#C41230]',
-  tableBorder:     'border-[rgba(255,255,255,0.08)]',
-  tableHead:       'border-[rgba(255,255,255,0.08)] bg-[#0F0F0F]',
+  tableBorder:     'border-[rgba(255,255,255,0.10)]',
+  tableHead:       'border-[rgba(255,255,255,0.08)] bg-[rgba(0,0,0,0.35)]',
   tableHeadTxt:    'text-[rgba(242,242,242,0.35)]',
-  tableRow:        'border-[rgba(255,255,255,0.05)] hover:bg-[#141414]',
+  tableRow:        'border-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.04)]',
   cellLink:        'text-[#F2F2F2] hover:text-[#C41230]',
   cellMuted:       'text-[rgba(242,242,242,0.6)]',
   cellData:        'text-[#C41230]',
+  tableWrap:       'bg-[rgba(10,10,10,0.50)] backdrop-blur-md',
+  emptyWrap:       'bg-[rgba(10,10,10,0.40)] backdrop-blur-md',
 } as const
 
 const LIGHT = {
-  walletCard:      'bg-[rgba(17,17,17,0.03)] border-[rgba(0,0,0,0.09)]',
+  walletCard:      'bg-[rgba(255,255,255,0.45)] backdrop-blur-md border-[rgba(0,0,0,0.10)]',
   walletLabel:     'text-[rgba(17,17,17,0.38)]',
   walletAddress:   'text-[#111111]',
   walletValue:     'text-[#C41230]',
   sectionHeading:  'text-[#111111]',
-  skeleton:        'bg-[rgba(17,17,17,0.04)]',
-  emptyBorder:     'border-[rgba(0,0,0,0.2)]',
+  skeleton:        'bg-[rgba(255,255,255,0.40)]',
+  emptyBorder:     'border-[rgba(0,0,0,0.12)]',
   emptyText:       'text-[rgba(17,17,17,0.38)]',
   emptyLink:       'text-[#C41230]',
-  tableBorder:     'border-[rgba(0,0,0,0.2)]',
-  tableHead:       'border-[rgba(0,0,0,0.2)] bg-[rgba(17,17,17,0.03)]',
+  tableBorder:     'border-[rgba(0,0,0,0.12)]',
+  tableHead:       'border-[rgba(0,0,0,0.10)] bg-[rgba(255,255,255,0.30)]',
   tableHeadTxt:    'text-[rgba(17,17,17,0.38)]',
-  tableRow:        'border-[rgba(0,0,0,0.12)] hover:bg-[rgba(17,17,17,0.02)]',
+  tableRow:        'border-[rgba(0,0,0,0.06)] hover:bg-[rgba(255,255,255,0.25)]',
   cellLink:        'text-[#111111] hover:text-[#C41230]',
   cellMuted:       'text-[rgba(17,17,17,0.6)]',
   cellData:        'text-[#C41230]',
+  tableWrap:       'bg-[rgba(255,255,255,0.40)] backdrop-blur-md',
+  emptyWrap:       'bg-[rgba(255,255,255,0.30)] backdrop-blur-md',
 } as const
 
 export default function UserDashboard() {
@@ -61,7 +65,6 @@ export default function UserDashboard() {
   const totalValue = portfolio?.totalValue ?? 0
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${isDark ? 'bg-[#0A0A0A]' : 'bg-[#F3EFE8]'}`}>
     <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10 space-y-10">
       {/* Wallet card */}
       <div className={`flex items-center justify-between p-6 border rounded transition-colors duration-300 ${T.walletCard}`}>
@@ -91,7 +94,7 @@ export default function UserDashboard() {
             ))}
           </div>
         ) : positions.length === 0 ? (
-          <div className={`text-center py-12 border rounded transition-colors duration-300 ${T.emptyBorder}`}>
+          <div className={`text-center py-12 border rounded transition-colors duration-300 ${T.emptyBorder} ${T.emptyWrap}`}>
             <p className={`font-mono text-sm transition-colors duration-300 ${T.emptyText}`}>No open positions</p>
             <Link
               to="/markets"
@@ -101,11 +104,11 @@ export default function UserDashboard() {
             </Link>
           </div>
         ) : (
-          <div className={`border rounded overflow-hidden transition-colors duration-300 ${T.tableBorder}`}>
+          <div className={`border rounded overflow-hidden transition-colors duration-300 ${T.tableBorder} ${T.tableWrap}`}>
             <table className="w-full text-sm">
               <thead>
                 <tr className={`border-b transition-colors duration-300 ${T.tableHead}`}>
-                  {['Market', 'Direction', 'Strike', 'Tokens', 'Value', 'Status'].map((h) => (
+                  {['Market', 'Question', 'Direction', 'Strike', 'Tokens', 'Value', 'Status'].map((h) => (
                     <th
                       key={h}
                       className={`px-4 py-3 text-left text-[10px] font-display tracking-widest uppercase transition-colors duration-300 ${T.tableHeadTxt}`}
@@ -128,6 +131,14 @@ export default function UserDashboard() {
                       >
                         {pos.market?.title ?? `#${pos.marketId}`}
                       </Link>
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className={`font-mono text-xs ${pos.direction === 'ABOVE' ? 'text-[#22D3A3]' : 'text-[#FF4560]'}`}>
+                        {pos.direction === 'ABOVE'
+                          ? `Final price ≥ $${pos.targetValueX.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+                          : `Final price < $${pos.targetValueX.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+                        }
+                      </span>
                     </td>
                     <td className="px-4 py-3">
                       <Badge variant={pos.direction === 'ABOVE' ? 'yes' : 'no'}>
@@ -168,11 +179,11 @@ export default function UserDashboard() {
             ))}
           </div>
         ) : lpPositions.length === 0 ? (
-          <div className={`text-center py-12 border rounded transition-colors duration-300 ${T.emptyBorder}`}>
+          <div className={`text-center py-12 border rounded transition-colors duration-300 ${T.emptyBorder} ${T.emptyWrap}`}>
             <p className={`font-mono text-sm transition-colors duration-300 ${T.emptyText}`}>No liquidity positions</p>
           </div>
         ) : (
-          <div className={`border rounded overflow-hidden transition-colors duration-300 ${T.tableBorder}`}>
+          <div className={`border rounded overflow-hidden transition-colors duration-300 ${T.tableBorder} ${T.tableWrap}`}>
             <table className="w-full text-sm">
               <thead>
                 <tr className={`border-b transition-colors duration-300 ${T.tableHead}`}>
@@ -220,7 +231,6 @@ export default function UserDashboard() {
           </div>
         )}
       </section>
-    </div>
     </div>
   )
 }

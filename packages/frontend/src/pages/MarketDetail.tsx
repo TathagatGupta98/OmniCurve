@@ -22,59 +22,61 @@ const TRADE_TABS = [
 ]
 
 const DARK = {
-  loadSkeleton:   'bg-[#1C1C1C]',
+  loadSkeleton:   'bg-[rgba(10,10,10,0.50)]',
   errorText:      'text-[#FF4560]',
   heading:        'text-[#F2F2F2]',
   badgeNum:       'text-[rgba(242,242,242,0.50)]',
-  statsStrip:     'border-[rgba(255,255,255,0.15)]',
-  statLabel:      'text-[rgba(242,242,242,0.55)]',
+  statsStrip:     'border-[rgba(255,255,255,0.12)] bg-[rgba(10,10,10,0.45)] backdrop-blur-md',
+  statLabel:      'text-[rgba(242,242,242,0.45)]',
   statMu:         'text-[#C41230]',
   statSigma:      'text-[#F2F2F2]',
   statLiq:        'text-[#F2F2F2]',
-  chartCard:      'bg-[#1A1A1A] border-[rgba(255,255,255,0.18)]',
-  yesResolved:    'bg-[rgba(34,211,163,0.12)] border-[rgba(34,211,163,0.35)]',
+  chartCard:      'bg-[rgba(10,10,10,0.55)] backdrop-blur-md border-[rgba(255,255,255,0.12)]',
+  yesResolved:    'bg-[rgba(34,211,163,0.10)] border-[rgba(34,211,163,0.30)]',
   yesResolvedTxt: 'text-[#22D3A3]',
-  noResolved:     'bg-[rgba(255,69,96,0.12)] border-[rgba(255,69,96,0.35)]',
+  noResolved:     'bg-[rgba(255,69,96,0.10)] border-[rgba(255,69,96,0.30)]',
   noResolvedTxt:  'text-[#FF4560]',
-  resolvedSub:    'text-[rgba(242,242,242,0.60)]',
-  noPositions:    'text-[rgba(242,242,242,0.50)]',
-  ownerBox:       'border-[rgba(196,18,48,0.40)] bg-[rgba(196,18,48,0.10)]',
+  resolvedSub:    'text-[rgba(242,242,242,0.55)]',
+  noPositions:    'text-[rgba(242,242,242,0.45)]',
+  ownerBox:       'border-[rgba(196,18,48,0.35)] bg-[rgba(196,18,48,0.08)]',
   ownerLabel:     'text-[#C41230]',
-  panelCard:      'bg-[#1A1A1A] border-[rgba(255,255,255,0.18)]',
-  infoCard:       'border-[rgba(255,255,255,0.15)]',
-  infoHeading:    'text-[rgba(242,242,242,0.55)]',
-  infoLabel:      'text-[rgba(242,242,242,0.55)]',
-  infoLink:       'text-[rgba(242,242,242,0.75)] hover:text-[#C41230]',
+  panelCard:      'bg-[rgba(10,10,10,0.60)] backdrop-blur-md border-[rgba(255,255,255,0.12)]',
+  infoCard:       'border-[rgba(255,255,255,0.10)] bg-[rgba(10,10,10,0.45)] backdrop-blur-md',
+  infoHeading:    'text-[rgba(242,242,242,0.45)]',
+  infoLabel:      'text-[rgba(242,242,242,0.45)]',
+  infoLink:       'text-[rgba(242,242,242,0.70)] hover:text-[#C41230]',
   liveIndicator:  'bg-[#22D3A3]',
   liveTxt:        'text-[#22D3A3]',
+  divider:        'border-[rgba(255,255,255,0.08)]',
 } as const
 
 const LIGHT = {
-  loadSkeleton:   'bg-[rgba(17,17,17,0.06)]',
+  loadSkeleton:   'bg-[rgba(255,255,255,0.35)]',
   errorText:      'text-[#dc2626]',
   heading:        'text-[#111111]',
   badgeNum:       'text-[rgba(17,17,17,0.50)]',
-  statsStrip:     'border-[rgba(0,0,0,0.18)]',
-  statLabel:      'text-[rgba(17,17,17,0.55)]',
+  statsStrip:     'border-[rgba(0,0,0,0.12)] bg-[rgba(255,255,255,0.40)] backdrop-blur-md',
+  statLabel:      'text-[rgba(17,17,17,0.45)]',
   statMu:         'text-[#C41230]',
   statSigma:      'text-[#111111]',
   statLiq:        'text-[#111111]',
-  chartCard:      'bg-white border-[rgba(0,0,0,0.20)]',
-  yesResolved:    'bg-[rgba(5,150,105,0.10)] border-[rgba(5,150,105,0.35)]',
+  chartCard:      'bg-[rgba(255,255,255,0.50)] backdrop-blur-md border-[rgba(0,0,0,0.12)]',
+  yesResolved:    'bg-[rgba(5,150,105,0.08)] border-[rgba(5,150,105,0.30)]',
   yesResolvedTxt: 'text-[#059669]',
-  noResolved:     'bg-[rgba(220,38,38,0.10)] border-[rgba(220,38,38,0.35)]',
+  noResolved:     'bg-[rgba(220,38,38,0.08)] border-[rgba(220,38,38,0.30)]',
   noResolvedTxt:  'text-[#dc2626]',
-  resolvedSub:    'text-[rgba(17,17,17,0.60)]',
-  noPositions:    'text-[rgba(17,17,17,0.50)]',
-  ownerBox:       'border-[rgba(196,18,48,0.35)] bg-[rgba(196,18,48,0.08)]',
+  resolvedSub:    'text-[rgba(17,17,17,0.55)]',
+  noPositions:    'text-[rgba(17,17,17,0.45)]',
+  ownerBox:       'border-[rgba(196,18,48,0.30)] bg-[rgba(196,18,48,0.06)]',
   ownerLabel:     'text-[#C41230]',
-  panelCard:      'bg-white border-[rgba(0,0,0,0.20)]',
-  infoCard:       'border-[rgba(0,0,0,0.20)]',
-  infoHeading:    'text-[rgba(17,17,17,0.55)]',
-  infoLabel:      'text-[rgba(17,17,17,0.55)]',
-  infoLink:       'text-[rgba(17,17,17,0.70)] hover:text-[#C41230]',
+  panelCard:      'bg-[rgba(255,255,255,0.55)] backdrop-blur-md border-[rgba(0,0,0,0.12)]',
+  infoCard:       'border-[rgba(0,0,0,0.12)] bg-[rgba(255,255,255,0.40)] backdrop-blur-md',
+  infoHeading:    'text-[rgba(17,17,17,0.45)]',
+  infoLabel:      'text-[rgba(17,17,17,0.45)]',
+  infoLink:       'text-[rgba(17,17,17,0.65)] hover:text-[#C41230]',
   liveIndicator:  'bg-[#059669]',
   liveTxt:        'text-[#059669]',
+  divider:        'border-[rgba(0,0,0,0.08)]',
 } as const
 
 export default function MarketDetail() {
@@ -94,9 +96,9 @@ export default function MarketDetail() {
 
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12 space-y-4">
+      <div className="max-w-6xl mx-auto px-4 sm:px-8 py-14 space-y-5">
         {[...Array(4)].map((_, i) => (
-          <div key={i} className={`h-16 rounded animate-pulse transition-colors duration-300 ${T.loadSkeleton}`} />
+          <div key={i} className={`h-16 rounded-lg animate-pulse transition-colors duration-300 ${T.loadSkeleton}`} />
         ))}
       </div>
     )
@@ -104,7 +106,7 @@ export default function MarketDetail() {
 
   if (error || !market) {
     return (
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-20 text-center">
+      <div className="max-w-6xl mx-auto px-4 sm:px-8 py-24 text-center">
         <p className={`font-mono transition-colors duration-300 ${T.errorText}`}>Market not found</p>
       </div>
     )
@@ -190,80 +192,83 @@ export default function MarketDetail() {
   )
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10 space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-3 mb-2 flex-wrap">
-            {resolved ? (
-              <Badge variant="resolved">Resolved</Badge>
-            ) : (
-              <Badge variant="live">Live</Badge>
-            )}
-            <span className={`text-xs font-mono transition-colors duration-300 ${T.badgeNum}`}>
-              #{market.marketId}
-            </span>
-            <span className={`text-xs font-mono uppercase transition-colors duration-300 ${T.badgeNum}`}>
-              {market.category}
-            </span>
-          </div>
-          <h1 className={`font-display font-700 text-2xl sm:text-3xl tracking-tight leading-tight transition-colors duration-300 ${T.heading}`}>
-            {market.title}
-          </h1>
+    <div className="max-w-6xl mx-auto px-4 sm:px-8 py-12 space-y-8">
+
+      {/* ── Header ─────────────────────────────────────────────────── */}
+      <div className="space-y-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          {resolved ? (
+            <Badge variant="resolved">Resolved</Badge>
+          ) : (
+            <Badge variant="live">Live</Badge>
+          )}
+          <span className={`text-xs font-mono transition-colors duration-300 ${T.badgeNum}`}>
+            #{market.marketId}
+          </span>
+          <span className={`text-xs font-mono uppercase tracking-wider transition-colors duration-300 ${T.badgeNum}`}>
+            {market.category}
+          </span>
+          {liveState && (
+            <div className="flex items-center gap-1.5 ml-auto">
+              <span className={`w-1.5 h-1.5 rounded-full animate-pulse transition-colors duration-300 ${T.liveIndicator}`} />
+              <span className={`text-xs font-mono transition-colors duration-300 ${T.liveTxt}`}>Live feed</span>
+            </div>
+          )}
         </div>
+        <h1 className={`font-display font-700 text-3xl sm:text-4xl tracking-tight leading-tight transition-colors duration-300 ${T.heading}`}>
+          {market.title}
+        </h1>
       </div>
 
-      {/* Stats strip */}
-      <div className={`flex flex-wrap gap-6 py-3 border-y transition-colors duration-300 ${T.statsStrip}`}>
+      {/* ── Stats strip ────────────────────────────────────────────── */}
+      <div className={`flex flex-wrap items-center gap-8 px-6 py-4 rounded-xl border transition-colors duration-300 ${T.statsStrip}`}>
         <div>
-          <p className={`text-[10px] font-display tracking-widest uppercase transition-colors duration-300 ${T.statLabel}`}>μ</p>
-          <p className={`font-mono text-lg transition-colors duration-300 ${T.statMu}`}>{mu.toLocaleString()}</p>
+          <p className={`text-[10px] font-display tracking-widest uppercase mb-1 transition-colors duration-300 ${T.statLabel}`}>
+            Market Mean (μ)
+          </p>
+          <p className={`font-mono text-xl transition-colors duration-300 ${T.statMu}`}>
+            {mu.toLocaleString()}
+          </p>
         </div>
         <div>
-          <p className={`text-[10px] font-display tracking-widest uppercase transition-colors duration-300 ${T.statLabel}`}>σ</p>
-          <p className={`font-mono text-lg transition-colors duration-300 ${T.statSigma}`}>{sigma.toLocaleString()}</p>
+          <p className={`text-[10px] font-display tracking-widest uppercase mb-1 transition-colors duration-300 ${T.statLabel}`}>
+            Uncertainty (σ)
+          </p>
+          <p className={`font-mono text-xl transition-colors duration-300 ${T.statSigma}`}>
+            {sigma.toLocaleString()}
+          </p>
         </div>
         <div>
-          <p className={`text-[10px] font-display tracking-widest uppercase transition-colors duration-300 ${T.statLabel}`}>Liquidity</p>
-          <p className={`font-mono text-lg transition-colors duration-300 ${T.statLiq}`}>
+          <p className={`text-[10px] font-display tracking-widest uppercase mb-1 transition-colors duration-300 ${T.statLabel}`}>
+            Total Liquidity
+          </p>
+          <p className={`font-mono text-xl transition-colors duration-300 ${T.statLiq}`}>
             ${liquidity.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
         </div>
-        {liveState && (
-          <div className="flex items-center gap-1.5 ml-auto">
-            <span className={`w-1.5 h-1.5 rounded-full animate-pulse transition-colors duration-300 ${T.liveIndicator}`} />
-            <span className={`text-xs font-mono transition-colors duration-300 ${T.liveTxt}`}>Live</span>
-          </div>
-        )}
+        <div className="ml-auto text-right hidden sm:block">
+          <p className={`text-[10px] font-display tracking-widest uppercase mb-1 transition-colors duration-300 ${T.statLabel}`}>
+            How it works
+          </p>
+          <p className={`text-xs font-mono transition-colors duration-300 ${T.badgeNum}`}>
+            μ shifts as traders bet · σ reflects disagreement
+          </p>
+        </div>
       </div>
 
-      {/* Chart */}
-      <div className={`border rounded p-4 transition-colors duration-300 ${T.chartCard}`}>
-        <GaussianChart
-          mu={mu}
-          sigma={sigma}
-          strikeX={strikeX}
-          liquidity={liquidity}
-          height={300}
-          {...(String(market.marketId) === '0'
-            ? { spotX: ethUsd, spotLabel: `ETH $${ethUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}` }
-            : {})}
-        />
-      </div>
-
-      {/* Resolution banner */}
+      {/* ── Resolution banner ──────────────────────────────────────── */}
       {resolved && winId && (
-        <div className={`rounded border p-4 flex items-center justify-between flex-wrap gap-3 transition-colors duration-300 ${
+        <div className={`rounded-xl border p-5 flex items-center justify-between flex-wrap gap-4 transition-colors duration-300 ${
           winId === '1' ? T.yesResolved : T.noResolved
         }`}>
           <div>
-            <p className={`font-display font-600 text-sm transition-colors duration-300 ${
+            <p className={`font-display font-700 text-base transition-colors duration-300 ${
               winId === '1' ? T.yesResolvedTxt : T.noResolvedTxt
             }`}>
               Market Resolved — {winId === '1' ? 'YES' : 'NO'} Won
             </p>
-            <p className={`text-xs font-mono mt-0.5 transition-colors duration-300 ${T.resolvedSub}`}>
-              Winning token holders can claim USDC
+            <p className={`text-xs font-mono mt-1 transition-colors duration-300 ${T.resolvedSub}`}>
+              Winning token holders can claim their USDC payout below
             </p>
           </div>
           {address && (
@@ -292,10 +297,10 @@ export default function MarketDetail() {
         </div>
       )}
 
-      {/* Owner controls */}
+      {/* ── Owner controls ─────────────────────────────────────────── */}
       {isOwner && !resolved && (
-        <div className={`border rounded p-4 transition-colors duration-300 ${T.ownerBox}`}>
-          <p className={`text-xs font-display tracking-widest uppercase mb-3 transition-colors duration-300 ${T.ownerLabel}`}>
+        <div className={`border rounded-xl p-5 transition-colors duration-300 ${T.ownerBox}`}>
+          <p className={`text-xs font-display tracking-widest uppercase mb-4 transition-colors duration-300 ${T.ownerLabel}`}>
             Owner Controls
           </p>
           <div className="flex flex-wrap gap-2">
@@ -312,41 +317,84 @@ export default function MarketDetail() {
         </div>
       )}
 
-      {/* Trade / LP panels */}
-      {!resolved && (
-        <div className={`border rounded overflow-hidden transition-colors duration-300 ${T.panelCard}`}>
-          <Tabs tabs={TRADE_TABS} active={activeTab} onChange={setActiveTab} />
-          {activeTab === 'trade' ? (
-            <StakerPanel market={{ ...market, currentMu: mu, currentSigma: sigma }} onStrikeChange={setStrikeX} />
-          ) : (
-            <LPPanel market={{ ...market, currentMu: mu, currentSigma: sigma, totalLiquidity: liquidity }} />
-          )}
-        </div>
-      )}
+      {/* ── Main two-column grid ────────────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-8 items-start">
 
-      {/* Contract info */}
-      <div className={`border rounded p-5 space-y-3 transition-colors duration-300 ${T.infoCard}`}>
-        <h3 className={`font-display font-600 text-xs tracking-widest uppercase transition-colors duration-300 ${T.infoHeading}`}>
-          Contract Addresses
-        </h3>
-        {[
-          { label: 'AMM', addr: market.ammAddress },
-          { label: 'Router', addr: market.routerAddress },
-          { label: 'LP Token', addr: market.lpTokenAddress },
-        ].map(({ label, addr }) => (
-          <div key={label} className="flex items-center justify-between gap-3">
-            <span className={`text-xs font-display uppercase tracking-wider transition-colors duration-300 ${T.infoLabel}`}>{label}</span>
-            <a
-              href={`https://sepolia.arbiscan.io/address/${addr}`}
-              target="_blank"
-              rel="noreferrer"
-              className={`font-mono text-xs transition-colors duration-200 ${T.infoLink}`}
-            >
-              {shortAddr(addr)} ↗
-            </a>
+        {/* Left column: chart + contract info */}
+        <div className="space-y-6">
+          <div className={`border rounded-xl p-6 transition-colors duration-300 ${T.chartCard}`}>
+            <p className={`text-[10px] font-display tracking-widest uppercase mb-4 transition-colors duration-300 ${T.statLabel}`}>
+              Probability Distribution
+            </p>
+            <GaussianChart
+              mu={mu}
+              sigma={sigma}
+              strikeX={strikeX}
+              liquidity={liquidity}
+              height={320}
+              {...(String(market.marketId) === '0'
+                ? { spotX: ethUsd, spotLabel: `ETH $${ethUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}` }
+                : {})}
+            />
+            <p className={`text-[11px] font-mono mt-4 leading-relaxed transition-colors duration-300 ${T.statLabel}`}>
+              The curve shows the market's collective belief about where the final price will land.
+              Your strike price splits it into a YES region (right) and NO region (left).
+            </p>
           </div>
-        ))}
+
+          {/* Contract info */}
+          <div className={`border rounded-xl p-6 space-y-4 transition-colors duration-300 ${T.infoCard}`}>
+            <h3 className={`font-display font-600 text-xs tracking-widest uppercase transition-colors duration-300 ${T.infoHeading}`}>
+              Contract Addresses
+            </h3>
+            {[
+              { label: 'AMM', addr: market.ammAddress },
+              { label: 'Router', addr: market.routerAddress },
+              { label: 'LP Token', addr: market.lpTokenAddress },
+            ].map(({ label, addr }) => (
+              <div key={label} className="flex items-center justify-between gap-3">
+                <span className={`text-xs font-display uppercase tracking-wider transition-colors duration-300 ${T.infoLabel}`}>
+                  {label}
+                </span>
+                <a
+                  href={`https://sepolia.arbiscan.io/address/${addr}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className={`font-mono text-xs transition-colors duration-200 ${T.infoLink}`}
+                >
+                  {shortAddr(addr)} ↗
+                </a>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Right column: trade / LP panel (sticky) */}
+        {!resolved && (
+          <div className="lg:sticky lg:top-6">
+            <div className={`border rounded-xl overflow-hidden transition-colors duration-300 ${T.panelCard}`}>
+              <div className="px-6 pt-6 pb-2">
+                <h2 className={`font-display font-700 text-lg mb-1 transition-colors duration-300 ${T.heading}`}>
+                  {activeTab === 'trade' ? 'Place Your Bet' : 'Provide Liquidity'}
+                </h2>
+                <p className={`text-xs font-mono transition-colors duration-300 ${T.statLabel}`}>
+                  {activeTab === 'trade'
+                    ? 'Pick a price target, a direction, and your stake.'
+                    : 'Deposit USDC to back trades and earn fees.'
+                  }
+                </p>
+              </div>
+              <Tabs tabs={TRADE_TABS} active={activeTab} onChange={setActiveTab} />
+              {activeTab === 'trade' ? (
+                <StakerPanel market={{ ...market, currentMu: mu, currentSigma: sigma }} onStrikeChange={setStrikeX} />
+              ) : (
+                <LPPanel market={{ ...market, currentMu: mu, currentSigma: sigma, totalLiquidity: liquidity }} />
+              )}
+            </div>
+          </div>
+        )}
       </div>
+
     </div>
   )
 }
