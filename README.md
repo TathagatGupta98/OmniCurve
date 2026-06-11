@@ -23,47 +23,37 @@ The core of **OmniCurve** translates the continuous Gaussian distribution into a
 
 ## Table of Contents
 
-<ol>
-    <li><a href="#1-overview">Overview</a>
-        <ul>
-            <li><a href="#11-introduction">Introduction</a></li>
-            <li><a href="#12-the-omnicurve-solution-continuous-gaussian-pricing">The OmniCurve Solution: Continuous Gaussian Pricing</a></li>
-            <li><a href="#13-demand-responsive-curve-dynamics">Demand-Responsive Curve Dynamics</a></li>
-            <li><a href="#14-settlement-against-reality">Settlement Against Reality</a></li>
-            <li><a href="#15-amm-model-comparison">AMM Model Comparison</a></li>
-            <li><a href="#16-conclusion">Conclusion</a></li>
-        </ul>
-    </li>
-    </li>
-    <li><a href="#2-architecture">Architecture</a>
-        <ul>
-            <li><a href="#21-high-level-workflow">High-Level Workflow</a></li>
-            <li><a href="#22-contract-system-eip-1167-proxy-factory">Contract System: EIP-1167 Proxy Factory</a></li>
-            <li><a href="#23-trade-execution-infrastructure">Trade Execution Infrastructure</a></li>
-            <li><a href="#24-liquidity-provision-infrastructure">Liquidity Provision Infrastructure</a></li>
-            <li><a href="#25-fee-distribution-infrastructure">Fee Distribution Infrastructure</a></li>
-            <li><a href="#26-market-resolution-infrastructure">Market Resolution Infrastructure</a></li>
-            <li><a href="#27-settlement-infrastructure">Settlement Infrastructure</a></li>
-        </ul>
-    </li>
-    <li><a href="#3-features">Features</a></li>
-    <li><a href="#4-technical-stack">Technical Stack</a></li>
-    <li><a href="#5-features"></a>Contract-by-contract: math meets Rust</li>
-    <li><a href="#6-technical-stack">Arbitrum Stylus & ecosystem best practices</a></li>
-    <li><a href="#7-getting-started">Getting Started</a>
-        <ul>
-            <li><a href="#51-prerequisites">Prerequisites</a></li>
-            <li><a href="#52-installation">Installation</a></li>
-            <li><a href="#53-building-contracts">Building Contracts</a></li>
-            <li><a href="#54-running-the-backend">Running the Backend</a></li>
-            <li><a href="#55-running-the-frontend">Running the Frontend</a></li>
-        </ul>
-    </li>
-    <li><a href="#8-deployment">Deployment</a></li>
-    <li><a href="#9-project-status">Project Status</a></li>
-    <li><a href="#10-project-license">Project License</a></li>
-    <li><a href="#11-references">References</a></li>
-</ol>
+## Table of Contents
+
+* [1. Overview](#1-overview)
+  * [1.1 Introduction](#11-introduction)
+  * [1.2 The OmniCurve Solution: Continuous Gaussian Pricing](#12-the-omnicurve-solution-continuous-gaussian-pricing)
+  * [1.3 Demand-Responsive Curve Dynamics](#13-demand-responsive-curve-dynamics)
+  * [1.4 Settlement Against Reality](#14-settlement-against-reality)
+  * [1.5 AMM Model Comparison](#15-amm-model-comparison)
+  * [1.6 Conclusion](#16-conclusion)
+* [2. Architecture](#2-architecture)
+  * [2.1 High-Level Workflow](#21-high-level-workflow)
+  * [2.2 Contract System: EIP-1167 Proxy Factory](#22-contract-system-eip-1167-proxy-factory)
+  * [2.3 Trade Execution Infrastructure](#23-trade-execution-infrastructure)
+  * [2.4 Liquidity Provision Infrastructure](#24-liquidity-provision-infrastructure)
+  * [2.5 Fee Distribution Infrastructure](#25-fee-distribution-infrastructure)
+  * [2.6 Market Resolution Infrastructure](#26-market-resolution-infrastructure)
+  * [2.7 Settlement Infrastructure](#27-settlement-infrastructure)
+* [3. Features](#3-features)
+* [4. Technical Overview](#4-technical-overview)
+* [5. Product roadmap: from hackathon PoC to consumer trading platform](#5-product-roadmap-from-hackathon-poc-to-consumer-trading-platform)
+* [6. Contract-by-contract: math meets Rust](#6-contract-by-contract-math-meets-rust)
+* [7. Arbitrum Stylus & ecosystem best practices](#7-arbitrum-stylus--ecosystem-best-practices)
+* [8. Getting Started](#8-getting-started)
+  * [8.1 Prerequisites](#81-prerequisites)
+  * [8.2 Installation](#82-installation)
+  * [8.3 Building Contracts](#83-building-contracts)
+  * [8.4 Running the Backend](#84-running-the-backend)
+  * [8.5 Running the Frontend](#85-running-the-frontend)
+* [9. Deployment](#9-deployment)
+* [10. Project License](#10-project-license)
+* [11. References](#11-references)
 
 ---
 
@@ -329,9 +319,144 @@ After resolution, participants settle positions through a **pull-based claiming*
 | Shared Types | TypeScript package with ABI exports |
 | Deployment | Arbitrum Sepolia testnet |
 
-## 5. Contract-by-contract: math meets Rust
+## 5. Product roadmap: from hackathon PoC to consumer trading platform
  
-### 5.1 `math_core.rs` — the numerical kernel
+This section reframes OmniCurve as a long-term consumer product rather than a one-shot
+hackathon submission — what's solid enough to build on today, and the roadmap for
+turning a mathematically rigorous AMM into a trading experience people actually want to
+use daily, including a forward bet on AI agents and agentic commerce as a primary
+distribution channel for prediction markets.
+ 
+### 5.1 What's live today
+ 
+The hackathon build is a complete, working vertical slice — not a demo with mocked
+pieces. Concretely, the following are implemented and deployed on Arbitrum Sepolia:
+ 
+- **The full Gaussian pricing engine on-chain** — `normal_cdf`, `erf_approx`, `exp_wad`,
+  `sqrt_wad`, all in fixed-point WAD arithmetic, unit-tested to ~11 significant digits
+  against reference values (Sections 2-3).
+- **Demand-responsive curve dynamics** — the stake-weighted μ/σ accumulator update,
+  prior seeding, and pre-update pricing guarantee (Section 2.2, 3.3).
+- **Per-strike ERC-1155 positions** — any `(strike, YES/NO)` pair gets a deterministic
+  `keccak256`-derived token ID, minted lazily on first trade. No enumeration of "markets"
+  needed.
+- **Curve-neutral liquidity provisioning** with MasterChef-style O(1) fee distribution
+  to LPs, and non-transferable LP receipt tokens that keep `reward_debt` accounting
+  sound.
+- **A two-phase resolution timelock** (24h dispute window) plus pull-based claiming for
+  both winners (`claim_winnings`) and LPs whose collateral was locked against losing
+  positions (`release_losing_collateral`).
+- **EIP-1167 factory** that clones AMM/Router/LP-token implementations per market via
+  CREATE2, with two-step ownership handoff to the market creator.
+- **A real-time backend and frontend** — Express/Socket.io indexer off a Goldsky
+  subgraph, Prisma/Postgres persistence, and a React/d3 terminal UI showing the live
+  curve.
+In short: the *hard part* — getting rigorous, demand-responsive Gaussian pricing to run
+cheaply and correctly on-chain — is done. Everything in 6.2 and 6.3 is about the layers
+*around* that core: how people discover, enter, and exit positions, and who (or what)
+places the trades.
+ 
+### 5.2 Trading experience roadmap
+ 
+The current trading flow (`buy_yes(target_price, stake_usdc)` / `buy_no(...)`, manual
+`set_final_price`, pull-based claims) is correct but minimal — a power user's flow, not a
+consumer one. Planned improvements, roughly in order of how directly they touch the
+existing contracts:
+ 
+- **Oracle-based resolution.** Replace the owner-set `set_final_price` with a Chainlink
+  price feed or UMA optimistic-oracle integration. This is the single highest-priority
+  change for trust — "the operator decides who wins" is acceptable for a hackathon PoC
+  and unacceptable for a product handling real capital. The two-phase timelock
+  (`propose_resolution` / `execute_resolution`) is already structured to slot an oracle
+  read in place of the manual `winning_id`.
+- **Limit and conditional orders.** Today every trade executes immediately at the
+  current CDF price. A natural extension: an off-chain order book / intent layer where
+  users specify "buy YES at strike $X if the implied price drops below $0.30," matched
+  off-chain and settled through `buy_internal` only when the condition is met — similar
+  to how many perp DEXs separate intent expression from on-chain execution.
+- **Multi-strike position management ("baskets").** Since every `(strike, direction)` is
+  its own ERC-1155 token, a natural UX layer is letting a user express a *view on the
+  shape of the distribution* — e.g. "I think the curve should be narrower than the
+  market currently implies" — as a single basket order that buys/sells across several
+  strikes in one transaction (a Router-level batching function, not a math change).
+- **Multi-asset collateral.** Currently every market is denominated in a single USDC
+  pool (`usdc_token` set per-AMM at creation). Supporting additional collateral types
+  (other stables, or yield-bearing assets like USDC-denominated vaults) would let LPs
+  earn baseline yield on idle `available_liquidity` between trades — a meaningful
+  capital-efficiency unlock given that, structurally, most of the pool sits unused at
+  any given strike.
+- **Curve analytics and "market microstructure" tooling.** The frontend already plots
+  μ/σ live; the roadmap extends this to historical curve replay, per-strike implied
+  volatility (derivable from `normal_pdf`, which is implemented but currently unused —
+  see Section 3.1), and slippage previews via `get_price_for_x` before a trade is signed.
+- **Mobile-first redesign.** The current "quant terminal" aesthetic is intentionally
+  power-user-facing. A consumer mobile app would foreground a small number of curated
+  markets, simple "thermometer" visualizations of the current belief curve instead of
+  raw Gaussian plots, push notifications on resolution and large curve moves, and
+  one-tap position sizing.
+### 5.3 AI agents and agentic commerce
+ 
+This is the part of the roadmap that's less "finish the AMM" and more "rethink who the
+AMM's counterparty is." A continuous, mathematically well-defined pricing curve — one
+that returns a price for *any* strike via a single `normal_cdf` call — is unusually
+well-suited to being queried and acted on by autonomous agents, for a simple reason:
+agents need machine-readable, composable price functions, not "go look at an order book
+and eyeball the spread." OmniCurve's `get_price_for_x(x, is_yes)` is already exactly
+that.
+ 
+- **Natural-language trading agents.** A conversational interface ("I think ETH ends
+  2026 between $4,000 and $6,000, put $50 on that") that decomposes a stated belief into
+  a basket of `buy_yes`/`buy_no` calls across strikes — effectively letting a user
+  express a *distribution* in plain language and having an agent translate it into the
+  position basket from 6.2. This is a thin layer over existing Router calls plus an LLM
+  that maps natural-language probability statements to (strike, stake) pairs.
+- **Autonomous market-making / LP agents.** Because LP deposits are strictly
+  curve-neutral (Section 2.2) and curve health is fully observable on-chain
+  (`global_mu`, `global_sigma`, `available_liquidity`, `locked_collateral`), an agent
+  could manage LP capital across *multiple* OmniCurve markets — entering/exiting based
+  on fee accrual rate (`acc_fee_per_share`), pool utilization
+  (`locked_collateral / (locked_collateral + available_liquidity)`), and `sigma_min`
+  proximity (a market whose σ is pinned at the floor is signaling either very strong
+  consensus or insufficient real activity) — without ever needing permission to move the
+  curve, since LP deposits structurally can't.
+- **Belief-aware portfolio agents.** An agent that holds a calibrated forecast for an
+  underlying (e.g. from an external model or aggregated data) could continuously compare
+  its own implied (μ, σ) against the market's current `global_mu`/`global_sigma` and
+  size positions proportional to the *divergence* — essentially an automated "trade
+  against the consensus when you have a better-calibrated prior" strategy, which is a
+  natural fit for OmniCurve specifically because the market's belief is *itself* a
+  Gaussian (μ, σ) that's directly comparable to an agent's own forecast distribution, not
+  a discrete probability that needs reinterpretation.
+- **Agent-to-agent settlement and agentic commerce rails.** As agent-native payment
+  protocols mature (e.g. x402-style HTTP-native micropayments, or Arbitrum-native
+  account-abstraction wallets for agents), OmniCurve's pull-based claim model
+  (`claim_winnings`, `release_losing_collateral`) is already permissionless and
+  stateless enough to be called by an agent's wallet without any bespoke integration —
+  the roadmap item here is less "change the contracts" and more "make sure the
+  Router/AMM ABI is documented and stable enough that agent frameworks can integrate
+  against it as a standard primitive," plus building reference agent SDKs (TypeScript
+  and Python) wrapping the existing `IDistributionAmm`/Router interfaces.
+- **Agent-readable market metadata and discovery.** For agents to *find* relevant
+  markets (not just trade ones they're told about), the backend's REST/GraphQL layer
+  would need a standardized, machine-readable schema describing each market's question,
+  current (μ, σ), resolution criteria, and time-to-resolution — effectively an
+  "llms.txt for prediction markets" that lets an agent enumerate tradeable beliefs across
+  many OmniCurve markets and reason about which ones are relevant to whatever task it's
+  performing.
+### 5.4 Sequencing and dependencies
+ 
+Roughly: **oracle resolution** unblocks everything else, since no serious capital (human
+or agent) should be staked against a manually-resolved market. **Multi-strike
+baskets and `get_price_for_x`-based previews** are the shared infrastructure that both
+the consumer UX (6.2) and the natural-language/portfolio agents (6.3) build on — so
+basket-order support at the Router level is the highest-leverage near-term contract
+change. **Agent SDKs and metadata schemas** can be built in parallel with the UX work
+since they consume the same read-only surface (`global_mu`, `global_sigma`,
+`get_price_for_x`, `acc_fee_per_share`) that already exists today.
+
+## 6. Contract-by-contract: math meets Rust
+ 
+### 6.1 `math_core.rs` — the numerical kernel
  
 This module has zero contract state and zero external calls — it is pure functions over
 `I256`, which is exactly what makes it cheap to call from both `distribution_amm.rs` and
@@ -357,7 +482,7 @@ ranges, intermediate products inside `I256`'s ~1.16e77 range). The `exp_wad` cla
 `[-20, 20]` and the `clamp_unit` calls in `normal_pdf`/`normal_cdf` are precisely the
 guardrails that keep values inside this safe envelope before they reach `wad_mul`.
  
-### 5.2 `distribution_amm.rs` — curve state and collateral
+### 6.2 `distribution_amm.rs` — curve state and collateral
  
 This contract owns the three accumulators from Section 2.2 and is the *only* place
 `recompute_curve` is called from.
@@ -425,7 +550,7 @@ accounting in this contract: `acc_fee_per_share += fee * 1e18 / total_shares`, a
 LP's claimable amount is `shares * acc_fee_per_share / 1e18 - reward_debt`. This is O(1)
 regardless of LP count, the standard SushiSwap MasterChef trick.
  
-### 5.3 `binary_router.rs` — pricing and trade execution
+### 6.3 `binary_router.rs` — pricing and trade execution
  
 **`buy_internal`** is where Section 2.1's pricing formula is actually evaluated against
 live state, and where the **pre-update pricing** guarantee from the README is enforced
@@ -476,7 +601,7 @@ on-chain analogue of "infinite strikes, one pool": there is no enumerable list o
 markets-within-the-market; any `(x, is_yes)` a trader chooses deterministically hashes to
 its own ERC-1155 token ID, created lazily on first use.
  
-### 5.4 `factory.rs` — EIP-1167 clones via Stylus
+### 6.4 `factory.rs` — EIP-1167 clones via Stylus
  
 This module is the one piece of the system with no Gaussian math at all, but it has the
 most Stylus-specific engineering, since **CREATE2 is not directly exposed by the Stylus
@@ -521,7 +646,7 @@ two-step ownership transfer (`transfer_ownership` + `accept_ownership`) is the s
 OpenZeppelin `Ownable2Step` pattern, reimplemented manually since Stylus doesn't ship
 inheritable contract mixins the way Solidity's OpenZeppelin does.
  
-### 5.5 `lp_token.rs` — accounting primitive, deliberately incomplete ERC-20
+### 6.5 `lp_token.rs` — accounting primitive, deliberately incomplete ERC-20
  
 The LP token is an ERC-20-shaped contract with `transfer` and `transferFrom` hardcoded to
 `Err(Error::Unauthorized)` — this is intentional, not a bug. Section 1's
@@ -541,7 +666,7 @@ diagram above (`AMM -> LP token: mint/burn authority`).
  
 ---
  
-## 6. Arbitrum Stylus & ecosystem best practices
+## 7. Arbitrum Stylus & ecosystem best practices
  
 OmniCurve's central pitch is "math that would be prohibitively expensive (or simply
 impractical) in Solidity becomes cheap in Stylus." The codebase backs this up with
@@ -614,11 +739,11 @@ asserting at the conversion layer).
 *timing* of resolution (only the *final price* itself is owner-supplied, which the
 README is upfront about as a hackathon simplification rather than a production design).
  
-## 7. Getting Started
+## 8. Getting Started
 
 Follow these instructions to set up the project locally for development and testing.
 
-### 7.1 Prerequisites
+### 8.1 Prerequisites
 
 - **Rust** (1.88.0+) with `wasm32-unknown-unknown` target
 - **Cargo Stylus CLI** for contract deployment
@@ -626,7 +751,7 @@ Follow these instructions to set up the project locally for development and test
 - **PostgreSQL** for the backend database
 - **Foundry** (optional, for Solidity-based integration tests)
 
-### 7.2 Installation
+### 8.2 Installation
 
 Clone the repository and install all workspace dependencies:
 
@@ -636,7 +761,7 @@ cd OmniCurve
 pnpm install
 ```
 
-### 7.3 Building Contracts
+### 8.3 Building Contracts
 
 Each contract is compiled separately using Cargo feature flags, producing four WASM binaries from a single crate:
 
@@ -653,7 +778,7 @@ cargo build --target wasm32-unknown-unknown --features factory --release
 cargo test
 ```
 
-### 7.4 Running the Backend
+### 8.4 Running the Backend
 
 ```bash
 # Set up environment variables (see .env.example)
@@ -667,7 +792,7 @@ pnpm --filter @omnicurve/backend db:seed
 pnpm --filter @omnicurve/backend start:api
 ```
 
-### 7.5 Running the Frontend
+### 8.5 Running the Frontend
 
 ```bash
 # Start the Vite dev server
@@ -678,7 +803,7 @@ The frontend connects to the backend API at `localhost:3001` and to Arbitrum Sep
 
 ---
 
-## 8. Deployment
+## 9. Deployment
 
 ### Contract Deployment
 
@@ -741,13 +866,6 @@ cast send <AMM_PROXY> "setDistribution(int256,int256)" <MU_WAD> <SIGMA_WAD> \
 
 ---
 
-## 9. Project Status
-
-- **Current Stage:** The protocol is a **hackathon proof-of-concept** deployed on Arbitrum Sepolia with a live market ("What will ETH price be by the end of 2026?").
-- **Audits:** The smart contracts have **not undergone a formal security audit**. Use at your own risk.
-- **Testing:** Rust unit tests cover the mathematical core (`math_core.rs`). Foundry integration tests exist for cross-contract interactions. The mathematical implementation provides ~11 significant digits of precision against reference values.
-
----
 
 ## 10. Project License
 
