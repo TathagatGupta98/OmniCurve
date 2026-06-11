@@ -1,5 +1,23 @@
 
-# OmniCurve: A Unified Continuous Distribution Prediction Market Protocol on Arbitrum Stylus
+<div align="center">
+
+# 🌊 OmniCurve
+
+### A Unified Continuous Distribution Prediction Market Protocol
+
+**Built on Arbitrum Stylus · Powered by Rust + WASM · Priced by Gaussian Mathematics**
+
+[![Built with Rust](https://img.shields.io/badge/Built%20with-Rust-orange?style=for-the-badge&logo=rust)](https://www.rust-lang.org/)
+[![Arbitrum Stylus](https://img.shields.io/badge/Arbitrum-Stylus-12AAFF?style=for-the-badge&logo=arbitrum)](https://docs.arbitrum.io/stylus/gentle-introduction)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](#10-project-license)
+[![Network: Sepolia](https://img.shields.io/badge/Network-Arbitrum%20Sepolia-blue?style=for-the-badge)](https://sepolia.arbiscan.io/)
+
+[![Stack](https://img.shields.io/badge/Frontend-React%20%2B%20Vite%20%2B%20d3-61DAFB?style=flat-square&logo=react)](#)
+[![Backend](https://img.shields.io/badge/Backend-Express%205%20%2B%20Socket.io-339933?style=flat-square&logo=node.js)](#)
+[![DB](https://img.shields.io/badge/DB-PostgreSQL%20%2B%20Prisma-2D3748?style=flat-square&logo=prisma)](#)
+[![Indexer](https://img.shields.io/badge/Indexer-Goldsky%20Subgraph-7C3AED?style=flat-square)](#)
+
+</div>
 
 **OmniCurve** is a novel prediction market protocol built on **Arbitrum Stylus** (Rust compiled to WASM). Instead of fragmenting liquidity across many separate binary "yes/no" pools, OmniCurve collapses all possible outcomes into a **single continuous liquidity curve** — an "omni-curve" — governed by a normal Gaussian probability density function. Our mission is to deliver a capital-efficient, mathematically precise, and demand-responsive platform for the future of prediction markets. This enables users stake value for the many different possible outcomes under a single pool, preventing the liquidity from being fragmented. 
 
