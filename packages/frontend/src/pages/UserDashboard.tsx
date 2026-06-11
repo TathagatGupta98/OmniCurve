@@ -9,56 +9,67 @@ const DARK = {
   walletCard:      'bg-[rgba(10,10,10,0.55)] backdrop-blur-md border-[rgba(255,255,255,0.10)]',
   walletLabel:     'text-[rgba(242,242,242,0.35)]',
   walletAddress:   'text-[#F2F2F2]',
-  walletValue:     'text-[#C41230]',
+  walletValue:     'text-[#C8102E]',
   sectionHeading:  'text-[#F2F2F2]',
   skeleton:        'bg-[rgba(10,10,10,0.50)]',
   emptyBorder:     'border-[rgba(255,255,255,0.08)]',
   emptyText:       'text-[rgba(242,242,242,0.35)]',
-  emptyLink:       'text-[#C41230]',
+  emptyLink:       'text-[#C8102E]',
   tableBorder:     'border-[rgba(255,255,255,0.10)]',
-  tableHead:       'border-[rgba(255,255,255,0.08)] bg-[rgba(0,0,0,0.35)]',
+  tableHead:       'border-[rgba(255,255,255,0.08)] bg-[rgba(62,44,30,0.35)]',
   tableHeadTxt:    'text-[rgba(242,242,242,0.35)]',
-  tableRow:        'border-[rgba(255,255,255,0.05)] hover:bg-[rgba(255,255,255,0.04)]',
-  cellLink:        'text-[#F2F2F2] hover:text-[#C41230]',
+  tableRow:        'border-[rgba(255,255,255,0.05)] hover:bg-[rgba(253,248,238,0.04)]',
+  cellLink:        'text-[#F2F2F2] hover:text-[#C8102E]',
   cellMuted:       'text-[rgba(242,242,242,0.6)]',
-  cellData:        'text-[#C41230]',
+  cellData:        'text-[#C8102E]',
   tableWrap:       'bg-[rgba(10,10,10,0.50)] backdrop-blur-md',
   emptyWrap:       'bg-[rgba(10,10,10,0.40)] backdrop-blur-md',
 } as const
 
 const LIGHT = {
-  walletCard:      'bg-[rgba(255,255,255,0.45)] backdrop-blur-md border-[rgba(0,0,0,0.10)]',
-  walletLabel:     'text-[rgba(17,17,17,0.38)]',
-  walletAddress:   'text-[#111111]',
-  walletValue:     'text-[#C41230]',
-  sectionHeading:  'text-[#111111]',
-  skeleton:        'bg-[rgba(255,255,255,0.40)]',
-  emptyBorder:     'border-[rgba(0,0,0,0.12)]',
-  emptyText:       'text-[rgba(17,17,17,0.38)]',
-  emptyLink:       'text-[#C41230]',
-  tableBorder:     'border-[rgba(0,0,0,0.12)]',
-  tableHead:       'border-[rgba(0,0,0,0.10)] bg-[rgba(255,255,255,0.30)]',
-  tableHeadTxt:    'text-[rgba(17,17,17,0.38)]',
-  tableRow:        'border-[rgba(0,0,0,0.06)] hover:bg-[rgba(255,255,255,0.25)]',
-  cellLink:        'text-[#111111] hover:text-[#C41230]',
-  cellMuted:       'text-[rgba(17,17,17,0.6)]',
-  cellData:        'text-[#C41230]',
-  tableWrap:       'bg-[rgba(255,255,255,0.40)] backdrop-blur-md',
-  emptyWrap:       'bg-[rgba(255,255,255,0.30)] backdrop-blur-md',
+  walletCard:      'bg-[rgba(253,248,238,0.45)] backdrop-blur-md border-[rgba(62,44,30,0.10)]',
+  walletLabel:     'text-[rgba(35,24,18,0.38)]',
+  walletAddress:   'text-[#231812]',
+  walletValue:     'text-[#C8102E]',
+  sectionHeading:  'text-[#231812]',
+  skeleton:        'bg-[rgba(253,248,238,0.40)]',
+  emptyBorder:     'border-[rgba(62,44,30,0.12)]',
+  emptyText:       'text-[rgba(35,24,18,0.38)]',
+  emptyLink:       'text-[#C8102E]',
+  tableBorder:     'border-[rgba(62,44,30,0.12)]',
+  tableHead:       'border-[rgba(62,44,30,0.10)] bg-[rgba(253,248,238,0.30)]',
+  tableHeadTxt:    'text-[rgba(35,24,18,0.38)]',
+  tableRow:        'border-[rgba(62,44,30,0.06)] hover:bg-[rgba(253,248,238,0.25)]',
+  cellLink:        'text-[#231812] hover:text-[#C8102E]',
+  cellMuted:       'text-[rgba(35,24,18,0.6)]',
+  cellData:        'text-[#C8102E]',
+  tableWrap:       'bg-[rgba(253,248,238,0.40)] backdrop-blur-md',
+  emptyWrap:       'bg-[rgba(253,248,238,0.30)] backdrop-blur-md',
 } as const
 
 export default function UserDashboard() {
-  const { address } = useAccount()
+  // status starts as 'reconnecting' while wagmi restores the session — only a
+  // settled 'disconnected' should bounce the user away, otherwise a connected
+  // wallet gets redirected before reconnection finishes.
+  const { address, status } = useAccount()
   const navigate = useNavigate()
   const { isDark } = useTheme()
   const T = isDark ? DARK : LIGHT
   const { data: portfolio, isLoading } = usePortfolio(address)
 
   useEffect(() => {
-    if (!address) navigate('/')
-  }, [address, navigate])
+    if (status === 'disconnected') navigate('/')
+  }, [status, navigate])
 
-  if (!address) return null
+  if (!address) {
+    return (
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10 space-y-4">
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className={`h-20 rounded animate-pulse transition-colors duration-300 ${T.skeleton}`} />
+        ))}
+      </div>
+    )
+  }
 
   const positions = portfolio?.positions ?? []
   const lpPositions = portfolio?.lpPositions ?? []
@@ -133,7 +144,7 @@ export default function UserDashboard() {
                       </Link>
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`font-mono text-xs ${pos.direction === 'ABOVE' ? 'text-[#22D3A3]' : 'text-[#FF4560]'}`}>
+                      <span className={`font-mono text-xs ${pos.direction === 'ABOVE' ? 'text-[#0B7A52]' : 'text-[#B42318]'}`}>
                         {pos.direction === 'ABOVE'
                           ? `Final price ≥ $${pos.targetValueX.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
                           : `Final price < $${pos.targetValueX.toLocaleString(undefined, { maximumFractionDigits: 0 })}`

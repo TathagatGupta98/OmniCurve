@@ -17,10 +17,10 @@ interface StakerPanelProps {
 function StepLabel({ n, label }: { n: number; label: string }) {
   return (
     <div className="flex items-center gap-2.5 mb-3">
-      <span className="w-5 h-5 shrink-0 rounded-full bg-[rgba(196,18,48,0.12)] border border-[rgba(196,18,48,0.28)] flex items-center justify-center text-[10px] font-mono text-[#C41230] font-600">
+      <span className="w-5 h-5 shrink-0 rounded-full bg-[rgba(200,16,46,0.12)] border border-[rgba(200,16,46,0.28)] flex items-center justify-center text-[10px] font-mono text-[#C8102E] font-600">
         {n}
       </span>
-      <p className="text-xs font-display tracking-wider text-[rgba(242,242,242,0.60)] uppercase">
+      <p className="text-xs font-display tracking-wider text-[rgba(35,24,18,0.60)] uppercase">
         {label}
       </p>
     </div>
@@ -75,11 +75,11 @@ export function StakerPanel({ market, onStrikeChange }: StakerPanelProps) {
   if (market.isResolved) {
     return (
       <div className="px-6 py-10 text-center space-y-2">
-        <p className="font-mono text-sm text-[rgba(242,242,242,0.65)]">
+        <p className="font-mono text-sm text-[rgba(35,24,18,0.65)]">
           Market resolved — trading closed.
         </p>
         {market.winningTokenId && (
-          <p className="font-mono text-base text-[#22D3A3]">
+          <p className="font-mono text-base text-[#0B7A52]">
             {market.winningTokenId === 1 ? 'YES' : 'NO'} Won
           </p>
         )}
@@ -101,13 +101,13 @@ export function StakerPanel({ market, onStrikeChange }: StakerPanelProps) {
           sigma={sigma}
           onChange={handleStrikeChange}
         />
-        <p className="mt-2.5 text-[11px] font-mono text-[rgba(242,242,242,0.38)] leading-relaxed">
+        <p className="mt-2.5 text-[11px] font-mono text-[rgba(35,24,18,0.38)] leading-relaxed">
           Drag the slider to pick the price level you're betting on.
           The chart on the left updates as you move it.
         </p>
       </div>
 
-      <div className="border-t border-[rgba(255,255,255,0.07)]" />
+      <div className="border-t border-[rgba(62,44,30,0.07)]" />
 
       {/* ── Step 2: Direction ────────────────────────────────── */}
       <div>
@@ -118,8 +118,8 @@ export function StakerPanel({ market, onStrikeChange }: StakerPanelProps) {
             onClick={() => setDirection('yes')}
             className={`py-3 rounded-lg border text-sm font-mono font-600 transition-all ${
               direction === 'yes'
-                ? 'bg-[rgba(34,211,163,0.14)] border-[rgba(34,211,163,0.55)] text-[#22D3A3]'
-                : 'border-[rgba(255,255,255,0.18)] text-[rgba(242,242,242,0.55)] hover:border-[rgba(34,211,163,0.35)] hover:text-[#22D3A3]'
+                ? 'bg-[rgba(11,122,82,0.14)] border-[rgba(11,122,82,0.55)] text-[#0B7A52]'
+                : 'border-[rgba(62,44,30,0.18)] text-[rgba(35,24,18,0.55)] hover:border-[rgba(11,122,82,0.35)] hover:text-[#0B7A52]'
             }`}
           >
             YES ↑
@@ -128,8 +128,8 @@ export function StakerPanel({ market, onStrikeChange }: StakerPanelProps) {
             onClick={() => setDirection('no')}
             className={`py-3 rounded-lg border text-sm font-mono font-600 transition-all ${
               direction === 'no'
-                ? 'bg-[rgba(255,69,96,0.14)] border-[rgba(255,69,96,0.55)] text-[#FF4560]'
-                : 'border-[rgba(255,255,255,0.18)] text-[rgba(242,242,242,0.55)] hover:border-[rgba(255,69,96,0.35)] hover:text-[#FF4560]'
+                ? 'bg-[rgba(180,35,24,0.14)] border-[rgba(180,35,24,0.55)] text-[#B42318]'
+                : 'border-[rgba(62,44,30,0.18)] text-[rgba(35,24,18,0.55)] hover:border-[rgba(180,35,24,0.35)] hover:text-[#B42318]'
             }`}
           >
             NO ↓
@@ -137,11 +137,11 @@ export function StakerPanel({ market, onStrikeChange }: StakerPanelProps) {
         </div>
 
         {/* Direction explainer */}
-        <div className="grid grid-cols-2 gap-3 text-[11px] font-mono text-[rgba(242,242,242,0.38)]">
-          <p className={`leading-snug transition-colors ${direction === 'yes' ? 'text-[rgba(34,211,163,0.65)]' : ''}`}>
+        <div className="grid grid-cols-2 gap-3 text-[11px] font-mono text-[rgba(35,24,18,0.38)]">
+          <p className={`leading-snug transition-colors ${direction === 'yes' ? 'text-[rgba(11,122,82,0.65)]' : ''}`}>
             YES wins if final price lands at or above your strike
           </p>
-          <p className={`leading-snug transition-colors ${direction === 'no' ? 'text-[rgba(255,69,96,0.65)]' : ''}`}>
+          <p className={`leading-snug transition-colors ${direction === 'no' ? 'text-[rgba(180,35,24,0.65)]' : ''}`}>
             NO wins if final price lands below your strike
           </p>
         </div>
@@ -149,25 +149,25 @@ export function StakerPanel({ market, onStrikeChange }: StakerPanelProps) {
         {/* Dynamic bet question */}
         <div className={`mt-4 rounded-lg border px-4 py-3.5 transition-all ${
           direction === 'yes'
-            ? 'bg-[rgba(34,211,163,0.05)] border-[rgba(34,211,163,0.25)]'
-            : 'bg-[rgba(255,69,96,0.05)] border-[rgba(255,69,96,0.25)]'
+            ? 'bg-[rgba(11,122,82,0.05)] border-[rgba(11,122,82,0.25)]'
+            : 'bg-[rgba(180,35,24,0.05)] border-[rgba(180,35,24,0.25)]'
         }`}>
-          <p className="text-[10px] font-display tracking-widest text-[rgba(242,242,242,0.40)] uppercase mb-1.5">
+          <p className="text-[10px] font-display tracking-widest text-[rgba(35,24,18,0.40)] uppercase mb-1.5">
             You're staking on
           </p>
-          <p className={`font-mono text-base font-600 leading-snug ${direction === 'yes' ? 'text-[#22D3A3]' : 'text-[#FF4560]'}`}>
+          <p className={`font-mono text-base font-600 leading-snug ${direction === 'yes' ? 'text-[#0B7A52]' : 'text-[#B42318]'}`}>
             {direction === 'yes'
               ? `Final price ≥ $${strikeX.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
               : `Final price < $${strikeX.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
             }
           </p>
-          <p className="text-[11px] text-[rgba(242,242,242,0.35)] mt-1 leading-tight">
+          <p className="text-[11px] text-[rgba(35,24,18,0.35)] mt-1 leading-tight">
             This question will appear on your dashboard after you trade.
           </p>
         </div>
       </div>
 
-      <div className="border-t border-[rgba(255,255,255,0.07)]" />
+      <div className="border-t border-[rgba(62,44,30,0.07)]" />
 
       {/* ── Step 3: Stake amount ─────────────────────────────── */}
       <div>
@@ -181,47 +181,47 @@ export function StakerPanel({ market, onStrikeChange }: StakerPanelProps) {
           min="0"
           step="1"
         />
-        <p className="mt-2.5 text-[11px] font-mono text-[rgba(242,242,242,0.38)] leading-relaxed">
+        <p className="mt-2.5 text-[11px] font-mono text-[rgba(35,24,18,0.38)] leading-relaxed">
           This is the total USDC you'll spend. A 1% protocol fee is deducted before tokens are minted.
         </p>
       </div>
 
       {/* ── Price preview ────────────────────────────────────── */}
       {stake > 0 && (
-        <div className="rounded-lg border border-[rgba(255,255,255,0.14)] bg-[rgba(255,255,255,0.03)] p-4 space-y-3">
-          <p className="text-[10px] font-display tracking-widest text-[rgba(242,242,242,0.45)] uppercase">
+        <div className="rounded-lg border border-[rgba(62,44,30,0.14)] bg-[rgba(62,44,30,0.03)] p-4 space-y-3">
+          <p className="text-[10px] font-display tracking-widest text-[rgba(35,24,18,0.45)] uppercase">
             Trade Preview
           </p>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-[10px] font-display tracking-widest text-[rgba(242,242,242,0.50)] uppercase mb-1">
+              <p className="text-[10px] font-display tracking-widest text-[rgba(35,24,18,0.50)] uppercase mb-1">
                 P(YES)
               </p>
-              <p className={`font-mono text-sm font-600 ${priceLoading ? 'opacity-40' : ''} text-[#22D3A3]`}>
+              <p className={`font-mono text-sm font-600 ${priceLoading ? 'opacity-40' : ''} text-[#0B7A52]`}>
                 {(pYes * 100).toFixed(2)}%
               </p>
             </div>
             <div>
-              <p className="text-[10px] font-display tracking-widest text-[rgba(242,242,242,0.50)] uppercase mb-1">
+              <p className="text-[10px] font-display tracking-widest text-[rgba(35,24,18,0.50)] uppercase mb-1">
                 P(NO)
               </p>
-              <p className={`font-mono text-sm font-600 ${priceLoading ? 'opacity-40' : ''} text-[#FF4560]`}>
+              <p className={`font-mono text-sm font-600 ${priceLoading ? 'opacity-40' : ''} text-[#B42318]`}>
                 {(pNo * 100).toFixed(2)}%
               </p>
             </div>
           </div>
-          <div className="border-t border-[rgba(255,255,255,0.10)] pt-3 space-y-2 text-xs font-mono">
+          <div className="border-t border-[rgba(62,44,30,0.10)] pt-3 space-y-2 text-xs font-mono">
             <div className="flex justify-between">
-              <span className="text-[rgba(242,242,242,0.55)]">Total cost</span>
-              <span className="text-[#C41230] font-600">${stake.toFixed(2)}</span>
+              <span className="text-[rgba(35,24,18,0.55)]">Total cost</span>
+              <span className="text-[#C8102E] font-600">${stake.toFixed(2)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[rgba(242,242,242,0.55)]">Protocol fee (1%)</span>
-              <span className="text-[rgba(242,242,242,0.55)]">−${feeCost.toFixed(2)}</span>
+              <span className="text-[rgba(35,24,18,0.55)]">Protocol fee (1%)</span>
+              <span className="text-[rgba(35,24,18,0.55)]">−${feeCost.toFixed(2)}</span>
             </div>
-            <div className="flex justify-between pt-2 border-t border-[rgba(255,255,255,0.10)]">
-              <span className="text-[rgba(242,242,242,0.55)]">Tokens you receive</span>
-              <span className="text-[#F2F2F2] font-600">{tokensOut.toFixed(2)}</span>
+            <div className="flex justify-between pt-2 border-t border-[rgba(62,44,30,0.10)]">
+              <span className="text-[rgba(35,24,18,0.55)]">Tokens you receive</span>
+              <span className="text-[#231812] font-600">{tokensOut.toFixed(2)}</span>
             </div>
           </div>
         </div>
@@ -232,8 +232,8 @@ export function StakerPanel({ market, onStrikeChange }: StakerPanelProps) {
         <p
           className={`text-xs font-mono rounded-lg p-3 border ${
             isUserRejection(error)
-              ? 'text-[rgba(242,242,242,0.70)] bg-[rgba(255,255,255,0.03)] border-[rgba(255,255,255,0.14)]'
-              : 'text-[#FF4560] bg-[rgba(255,69,96,0.07)] border-[rgba(255,69,96,0.18)]'
+              ? 'text-[rgba(35,24,18,0.70)] bg-[rgba(62,44,30,0.03)] border-[rgba(62,44,30,0.14)]'
+              : 'text-[#B42318] bg-[rgba(180,35,24,0.07)] border-[rgba(180,35,24,0.18)]'
           }`}
         >
           {formatTxError(error)}
@@ -242,18 +242,18 @@ export function StakerPanel({ market, onStrikeChange }: StakerPanelProps) {
 
       {/* ── CTA ──────────────────────────────────────────────── */}
       {!address ? (
-        <p className="text-xs font-mono text-center text-[rgba(242,242,242,0.50)] py-2">
+        <p className="text-xs font-mono text-center text-[rgba(35,24,18,0.50)] py-2">
           Connect your wallet to trade
         </p>
       ) : isConfirmed ? (
         <div className="text-center space-y-3 py-2">
-          <p className="text-sm font-mono text-[#22D3A3]">Trade confirmed!</p>
+          <p className="text-sm font-mono text-[#0B7A52]">Trade confirmed!</p>
           {txHash && (
             <a
               href={`https://sepolia.arbiscan.io/tx/${txHash}`}
               target="_blank"
               rel="noreferrer"
-              className="text-xs font-mono text-[rgba(242,242,242,0.55)] hover:text-[#C41230] block"
+              className="text-xs font-mono text-[rgba(35,24,18,0.55)] hover:text-[#C8102E] block"
             >
               View on Arbiscan ↗
             </a>
@@ -265,17 +265,17 @@ export function StakerPanel({ market, onStrikeChange }: StakerPanelProps) {
       ) : (
         <div className="space-y-2.5">
           {isWorking && (
-            <div className="flex items-center justify-center gap-3 text-xs font-mono text-[rgba(242,242,242,0.55)] py-1">
-              <span className={step === 'approving' ? 'text-[#C41230]' : 'opacity-30'}>Approve</span>
+            <div className="flex items-center justify-center gap-3 text-xs font-mono text-[rgba(35,24,18,0.55)] py-1">
+              <span className={step === 'approving' ? 'text-[#C8102E]' : 'opacity-30'}>Approve</span>
               <span className="opacity-20">→</span>
-              <span className={step === 'buying' ? 'text-[#C41230]' : 'opacity-30'}>Confirm</span>
+              <span className={step === 'buying' ? 'text-[#C8102E]' : 'opacity-30'}>Confirm</span>
               <span className="opacity-20">→</span>
               <span className="opacity-30">Done</span>
             </div>
           )}
           <Button
             variant={direction === 'yes' ? 'ghost' : 'danger'}
-            className={`w-full ${direction === 'yes' ? 'border-[#22D3A3] text-[#22D3A3] hover:bg-[rgba(34,211,163,0.08)]' : ''}`}
+            className={`w-full ${direction === 'yes' ? 'border-[#0B7A52] text-[#0B7A52] hover:bg-[rgba(11,122,82,0.08)]' : ''}`}
             loading={isWorking}
             disabled={!stake || isWorking}
             onClick={handleExecute}

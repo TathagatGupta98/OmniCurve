@@ -68,7 +68,7 @@ export function MarketCard({ market }: MarketCardProps) {
               >
                 μ
               </p>
-              <p className="font-mono text-xs text-[#C41230]">{mu.toLocaleString()}</p>
+              <p className="font-mono text-xs text-[#C8102E]">{mu.toLocaleString()}</p>
             </div>
             <div>
               <p

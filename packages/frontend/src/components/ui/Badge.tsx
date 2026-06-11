@@ -15,11 +15,11 @@ export function Badge({ variant = 'muted', children, className }: BadgeProps) {
       className={cn(
         'inline-flex items-center gap-1.5 px-2 py-0.5 text-xs font-mono rounded-sm tracking-wide',
         {
-          'bg-[rgba(34,211,163,0.15)] text-[#22D3A3] border border-[rgba(34,211,163,0.45)]':
+          'bg-[rgba(11,122,82,0.15)] text-[#0B7A52] border border-[rgba(11,122,82,0.45)]':
             variant === 'yes' || variant === 'live',
-          'bg-[rgba(255,69,96,0.15)] text-[#dc2626] border border-[rgba(255,69,96,0.45)]':
+          'bg-[rgba(180,35,24,0.15)] text-[#B42318] border border-[rgba(180,35,24,0.45)]':
             variant === 'no' || variant === 'resolved',
-          'bg-[rgba(196,18,48,0.15)] text-[#C41230] border border-[rgba(196,18,48,0.45)]':
+          'bg-[rgba(200,16,46,0.15)] text-[#C8102E] border border-[rgba(200,16,46,0.45)]':
             variant === 'amber',
         },
         className,
@@ -35,7 +35,7 @@ export function Badge({ variant = 'muted', children, className }: BadgeProps) {
       }
     >
       {variant === 'live' && (
-        <span className="w-1.5 h-1.5 rounded-full bg-[#22D3A3] animate-pulse" />
+        <span className="w-1.5 h-1.5 rounded-full bg-[#0B7A52] animate-pulse" />
       )}
       {children}
     </span>

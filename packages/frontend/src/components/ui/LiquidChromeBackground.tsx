@@ -75,14 +75,14 @@ export default function LiquidChromeBackground({ isDark }: Props) {
         return col;
       }
 
-      /* Light: ivory → blush → crimson → deep maroon */
+      /* Light: cream → faint blush → soft rose. Deliberately capped at a
+         very light red so the background never competes with content. */
       vec3 lightPal(float t) {
-        vec3 col = mix(vec3(0.998, 0.966, 0.960), vec3(0.960, 0.860, 0.845),
-                       smoothstep(0.00, 0.28, t));
-        col = mix(col, vec3(0.880, 0.600, 0.580), smoothstep(0.22, 0.50, t));
-        col = mix(col, vec3(0.769, 0.071, 0.188), smoothstep(0.46, 0.70, t));
-        col = mix(col, vec3(0.340, 0.018, 0.050), smoothstep(0.66, 0.86, t));
-        col = mix(col, vec3(0.080, 0.002, 0.010), smoothstep(0.84, 1.00, t));
+        vec3 col = mix(vec3(0.976, 0.955, 0.914), vec3(0.973, 0.929, 0.886),
+                       smoothstep(0.00, 0.30, t));
+        col = mix(col, vec3(0.968, 0.898, 0.852), smoothstep(0.25, 0.55, t));
+        col = mix(col, vec3(0.958, 0.856, 0.812), smoothstep(0.50, 0.75, t));
+        col = mix(col, vec3(0.942, 0.808, 0.764), smoothstep(0.72, 1.00, t));
         return col;
       }
 
@@ -139,14 +139,14 @@ export default function LiquidChromeBackground({ isDark }: Props) {
 
         /* Cursor glow — very subtle */
         float mDist = sqrt(md2);
-        float glow  = exp(-mDist * 7.5) * 0.08;
+        float glow  = exp(-mDist * 7.5) * 0.04;
         vec3  glowD = vec3(0.950, 0.340, 0.310) * glow;
         vec3  glowL = vec3(0.769, 0.071, 0.188) * glow;
         col = clamp(col + mix(glowL, glowD, uDark), 0.0, 1.0);
 
         /* Very subtle vignette — draws focus inward */
         float vign = smoothstep(0.82, 0.22, length(uv - 0.5));
-        col *= mix(0.91 + 0.09 * vign, 0.93 + 0.07 * vign, uDark);
+        col *= mix(0.975 + 0.025 * vign, 0.93 + 0.07 * vign, uDark);
 
         gl_FragColor = vec4(col, 1.0);
       }

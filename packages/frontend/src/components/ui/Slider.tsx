@@ -27,23 +27,23 @@ export function Slider({ value, min, max, step = 0.01, onChange, label, displayV
       {(label || displayValue) && (
         <div className="flex justify-between items-center">
           {label && (
-            <span className="text-xs font-display tracking-wider text-[rgba(242,242,242,0.45)] uppercase">
+            <span className="text-xs font-display tracking-wider text-[rgba(35,24,18,0.45)] uppercase">
               {label}
             </span>
           )}
           {displayValue && (
-            <span className="text-sm font-mono text-[#C41230]">{displayValue}</span>
+            <span className="text-sm font-mono text-[#C8102E]">{displayValue}</span>
           )}
         </div>
       )}
       <div className="relative h-5 flex items-center">
-        <div className="w-full h-px bg-[rgba(255,255,255,0.08)] rounded-full relative">
+        <div className="w-full h-px bg-[rgba(62,44,30,0.08)] rounded-full relative">
           {/* YES (right) fill */}
           <div
             className="absolute right-0 top-0 h-full rounded-full"
             style={{
               width: `${100 - pct}%`,
-              background: 'rgba(34,211,163,0.35)',
+              background: 'rgba(11,122,82,0.35)',
             }}
           />
           {/* NO (left) fill */}
@@ -51,7 +51,7 @@ export function Slider({ value, min, max, step = 0.01, onChange, label, displayV
             className="absolute left-0 top-0 h-full rounded-full"
             style={{
               width: `${pct}%`,
-              background: 'rgba(255,69,96,0.35)',
+              background: 'rgba(180,35,24,0.35)',
             }}
           />
         </div>
@@ -69,7 +69,7 @@ export function Slider({ value, min, max, step = 0.01, onChange, label, displayV
         />
         {/* Thumb */}
         <div
-          className="absolute w-3.5 h-3.5 rounded-full border-2 border-[#C41230] bg-[#0A0A0A] pointer-events-none"
+          className="absolute w-3.5 h-3.5 rounded-full border-2 border-[#C8102E] bg-[#FDF8EE] pointer-events-none"
           style={{ left: `calc(${pct}% - 7px)` }}
         />
       </div>

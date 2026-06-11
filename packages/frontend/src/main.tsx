@@ -32,8 +32,8 @@ function Root() {
 function RainbowKitWithTheme({ children }: { children: React.ReactNode }) {
   const { isDark } = useTheme()
   const rkTheme = isDark
-    ? darkTheme({ accentColor: '#C41230', accentColorForeground: '#ffffff', borderRadius: 'small', fontStack: 'system' })
-    : lightTheme({ accentColor: '#C41230', accentColorForeground: '#ffffff', borderRadius: 'small', fontStack: 'system' })
+    ? darkTheme({ accentColor: '#C8102E', accentColorForeground: '#ffffff', borderRadius: 'small', fontStack: 'system' })
+    : lightTheme({ accentColor: '#C8102E', accentColorForeground: '#ffffff', borderRadius: 'small', fontStack: 'system' })
   return <RainbowKitProvider theme={rkTheme}>{children}</RainbowKitProvider>
 }
 

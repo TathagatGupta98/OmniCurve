@@ -2,60 +2,35 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ── Dark theme (default) — Ruan palette: near-black + crimson ──────────── */
+/* ── "Ledger Paper" — warm cream + signal red + warm ink ─────────────────
+   The single theme. Cream like aged bond paper, crimson as the only loud
+   voice, deep warm ink for text. YES = deep emerald, NO = brick red.      */
 :root,
-html[data-theme="dark"] {
-  --bg-base:        #0A0A0A;
-  --bg-surface:     #1C1C1C;
-  --bg-surface-2:   #282828;
-  --border:         rgba(255, 255, 255, 0.20);
-  --border-dim:     rgba(255, 255, 255, 0.12);
-  --text-primary:   #F2F2F2;
-  --text-muted:     rgba(242, 242, 242, 0.70);
-  --text-subtle:    rgba(242, 242, 242, 0.50);
-  --accent-yes:     #22D3A3;
-  --accent-no:      #FF4560;
-  --accent-data:    #C41230;
-  --accent-data-dim: rgba(196, 18, 48, 0.20);
-  --grid-line:      rgba(255, 255, 255, 0.04);
-  --nav-bg:         rgba(15, 15, 15, 0.95);
-  --nav-border:     rgba(255, 255, 255, 0.12);
-  --logo-curve:     #C41230;
-  --nav-link-active: #C41230;
-  --surface-pulse:  rgba(255, 255, 255, 0.05);
-  --rk-theme-accent: #C41230;
+html[data-theme="light"] {
+  --bg-base:        #F4EEE1;
+  --bg-surface:     #FDF8EE;
+  --bg-surface-2:   #F7F1E3;
+  --border:         rgba(62, 44, 30, 0.22);
+  --border-dim:     rgba(62, 44, 30, 0.13);
+  --text-primary:   #231812;
+  --text-muted:     rgba(35, 24, 18, 0.72);
+  --text-subtle:    rgba(35, 24, 18, 0.52);
+  --accent-yes:     #0B7A52;
+  --accent-no:      #B42318;
+  --accent-data:    #C8102E;
+  --accent-data-dim: rgba(200, 16, 46, 0.12);
+  --grid-line:      rgba(62, 44, 30, 0.065);
+  --nav-bg:         rgba(250, 244, 232, 0.92);
+  --nav-border:     rgba(62, 44, 30, 0.16);
+  --logo-curve:     #C8102E;
+  --nav-link-active: #C8102E;
+  --surface-pulse:  rgba(62, 44, 30, 0.05);
+  --rk-theme-accent: #C8102E;
   --rk-theme-accent-fg: #ffffff;
   /* chart */
-  --chart-curve:      #F2F2F2;
-  --chart-axis:       rgba(255, 255, 255, 0.18);
-  --chart-tick-text:  rgba(242, 242, 242, 0.65);
-  --chart-glow:       1;
-}
-
-/* ── Light theme — warm cream + crimson + near-black ────────────────────── */
-html[data-theme="light"] {
-  --bg-base:        #F3EFE8;
-  --bg-surface:     #FFFFFF;
-  --bg-surface-2:   #F5F5F5;
-  --border:         rgba(0, 0, 0, 0.22);
-  --border-dim:     rgba(0, 0, 0, 0.14);
-  --text-primary:   #0F0F0F;
-  --text-muted:     rgba(15, 15, 15, 0.72);
-  --text-subtle:    rgba(15, 15, 15, 0.55);
-  --accent-yes:     #047857;
-  --accent-no:      #B91C1C;
-  --accent-data:    #C41230;
-  --accent-data-dim: rgba(196, 18, 48, 0.15);
-  --grid-line:      rgba(0, 0, 0, 0.07);
-  --nav-bg:         rgba(255, 255, 255, 0.97);
-  --nav-border:     rgba(0, 0, 0, 0.18);
-  --logo-curve:     #C41230;
-  --nav-link-active: #C41230;
-  --surface-pulse:  rgba(0, 0, 0, 0.04);
-  /* chart */
-  --chart-curve:      #1C1917;
-  --chart-axis:       rgba(0, 0, 0, 0.30);
-  --chart-tick-text:  rgba(15, 15, 15, 0.70);
+  --chart-curve:      #2A1C12;
+  --chart-axis:       rgba(62, 44, 30, 0.30);
+  --chart-tick-text:  rgba(35, 24, 18, 0.66);
   --chart-glow:       0;
 }
 
@@ -92,73 +67,39 @@ input[type='number'],
   font-family: 'JetBrains Mono', monospace;
 }
 
-/* RainbowKit overrides — dark */
-html[data-theme="dark"] [data-rk],
-:root [data-rk] {
-  --rk-colors-accentColor: #C41230 !important;
-  --rk-colors-accentColorForeground: #ffffff !important;
-  --rk-colors-actionButtonBorder: rgba(255, 255, 255, 0.10) !important;
-  --rk-colors-actionButtonBorderMobile: rgba(255, 255, 255, 0.10) !important;
-  --rk-colors-actionButtonSecondaryBackground: rgba(255, 255, 255, 0.04) !important;
-  --rk-colors-closeButton: rgba(242, 242, 242, 0.45) !important;
-  --rk-colors-closeButtonBackground: rgba(255, 255, 255, 0.07) !important;
-  --rk-colors-connectButtonBackground: rgba(255, 255, 255, 0.04) !important;
-  --rk-colors-connectButtonBackgroundError: #FF4560 !important;
-  --rk-colors-connectButtonInnerBackground: rgba(255, 255, 255, 0.07) !important;
-  --rk-colors-connectButtonText: #F2F2F2 !important;
-  --rk-colors-connectButtonTextError: #F2F2F2 !important;
-  --rk-colors-connectionIndicator: #22D3A3 !important;
-  --rk-colors-downloadBottomCardBackground: #0A0A0A !important;
-  --rk-colors-downloadTopCardBackground: rgba(255, 255, 255, 0.04) !important;
-  --rk-colors-error: #FF4560 !important;
-  --rk-colors-generalBorder: rgba(255, 255, 255, 0.10) !important;
-  --rk-colors-generalBorderDim: rgba(255, 255, 255, 0.06) !important;
-  --rk-colors-menuItemBackground: rgba(255, 255, 255, 0.04) !important;
-  --rk-colors-modalBackdrop: rgba(10, 10, 10, 0.88) !important;
-  --rk-colors-modalBackground: #111111 !important;
-  --rk-colors-modalBorder: rgba(255, 255, 255, 0.10) !important;
-  --rk-colors-modalText: #F2F2F2 !important;
-  --rk-colors-modalTextDim: rgba(242, 242, 242, 0.45) !important;
-  --rk-colors-modalTextSecondary: rgba(242, 242, 242, 0.45) !important;
-  --rk-colors-profileAction: rgba(255, 255, 255, 0.04) !important;
-  --rk-colors-profileActionHover: rgba(255, 255, 255, 0.07) !important;
-  --rk-colors-profileForeground: rgba(255, 255, 255, 0.04) !important;
-  --rk-colors-selectedOptionBorder: #C41230 !important;
-  --rk-colors-standby: #C41230 !important;
-}
-
-/* RainbowKit overrides — light */
+/* RainbowKit overrides — cream light */
+:root [data-rk],
 html[data-theme="light"] [data-rk] {
-  --rk-colors-accentColor: #C41230 !important;
+  --rk-colors-accentColor: #C8102E !important;
   --rk-colors-accentColorForeground: #ffffff !important;
-  --rk-colors-actionButtonBorder: rgba(0, 0, 0, 0.10) !important;
-  --rk-colors-actionButtonBorderMobile: rgba(0, 0, 0, 0.10) !important;
-  --rk-colors-actionButtonSecondaryBackground: rgba(0, 0, 0, 0.03) !important;
-  --rk-colors-closeButton: rgba(17, 17, 17, 0.5) !important;
-  --rk-colors-closeButtonBackground: rgba(0, 0, 0, 0.05) !important;
-  --rk-colors-connectButtonBackground: rgba(0, 0, 0, 0.03) !important;
-  --rk-colors-connectButtonBackgroundError: #dc2626 !important;
-  --rk-colors-connectButtonInnerBackground: rgba(0, 0, 0, 0.05) !important;
-  --rk-colors-connectButtonText: #111111 !important;
-  --rk-colors-connectButtonTextError: #111111 !important;
-  --rk-colors-connectionIndicator: #059669 !important;
-  --rk-colors-downloadBottomCardBackground: #FFFFFF !important;
-  --rk-colors-downloadTopCardBackground: rgba(0, 0, 0, 0.03) !important;
-  --rk-colors-error: #dc2626 !important;
-  --rk-colors-generalBorder: rgba(0, 0, 0, 0.10) !important;
-  --rk-colors-generalBorderDim: rgba(0, 0, 0, 0.06) !important;
-  --rk-colors-menuItemBackground: rgba(0, 0, 0, 0.03) !important;
-  --rk-colors-modalBackdrop: rgba(255, 255, 255, 0.88) !important;
-  --rk-colors-modalBackground: #F5F5F5 !important;
-  --rk-colors-modalBorder: rgba(0, 0, 0, 0.10) !important;
-  --rk-colors-modalText: #111111 !important;
-  --rk-colors-modalTextDim: rgba(17, 17, 17, 0.5) !important;
-  --rk-colors-modalTextSecondary: rgba(17, 17, 17, 0.5) !important;
-  --rk-colors-profileAction: rgba(0, 0, 0, 0.03) !important;
-  --rk-colors-profileActionHover: rgba(0, 0, 0, 0.05) !important;
-  --rk-colors-profileForeground: rgba(0, 0, 0, 0.03) !important;
-  --rk-colors-selectedOptionBorder: #C41230 !important;
-  --rk-colors-standby: #C41230 !important;
+  --rk-colors-actionButtonBorder: rgba(62, 44, 30, 0.12) !important;
+  --rk-colors-actionButtonBorderMobile: rgba(62, 44, 30, 0.12) !important;
+  --rk-colors-actionButtonSecondaryBackground: rgba(62, 44, 30, 0.04) !important;
+  --rk-colors-closeButton: rgba(35, 24, 18, 0.5) !important;
+  --rk-colors-closeButtonBackground: rgba(62, 44, 30, 0.06) !important;
+  --rk-colors-connectButtonBackground: rgba(62, 44, 30, 0.04) !important;
+  --rk-colors-connectButtonBackgroundError: #B42318 !important;
+  --rk-colors-connectButtonInnerBackground: rgba(62, 44, 30, 0.06) !important;
+  --rk-colors-connectButtonText: #231812 !important;
+  --rk-colors-connectButtonTextError: #231812 !important;
+  --rk-colors-connectionIndicator: #0B7A52 !important;
+  --rk-colors-downloadBottomCardBackground: #FDF8EE !important;
+  --rk-colors-downloadTopCardBackground: rgba(62, 44, 30, 0.04) !important;
+  --rk-colors-error: #B42318 !important;
+  --rk-colors-generalBorder: rgba(62, 44, 30, 0.12) !important;
+  --rk-colors-generalBorderDim: rgba(62, 44, 30, 0.07) !important;
+  --rk-colors-menuItemBackground: rgba(62, 44, 30, 0.04) !important;
+  --rk-colors-modalBackdrop: rgba(58, 40, 26, 0.45) !important;
+  --rk-colors-modalBackground: #FDF8EE !important;
+  --rk-colors-modalBorder: rgba(62, 44, 30, 0.14) !important;
+  --rk-colors-modalText: #231812 !important;
+  --rk-colors-modalTextDim: rgba(35, 24, 18, 0.5) !important;
+  --rk-colors-modalTextSecondary: rgba(35, 24, 18, 0.5) !important;
+  --rk-colors-profileAction: rgba(62, 44, 30, 0.04) !important;
+  --rk-colors-profileActionHover: rgba(62, 44, 30, 0.07) !important;
+  --rk-colors-profileForeground: rgba(62, 44, 30, 0.04) !important;
+  --rk-colors-selectedOptionBorder: #C8102E !important;
+  --rk-colors-standby: #C8102E !important;
 }
 
 /* Scrollbar */
@@ -170,11 +111,11 @@ html[data-theme="light"] [data-rk] {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(128, 128, 128, 0.2);
+  background: rgba(62, 44, 30, 0.22);
   border-radius: 2px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(196, 18, 48, 0.4);
+  background: rgba(200, 16, 46, 0.45);
 }
 
 /* Focus ring */

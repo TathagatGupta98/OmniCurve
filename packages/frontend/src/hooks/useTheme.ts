@@ -6,7 +6,7 @@ interface ThemeContextValue {
 }
 
 export const ThemeContext = createContext<ThemeContextValue>({
-  isDark: true,
+  isDark: false,
   toggleTheme: () => {},
 })
 
@@ -16,8 +16,8 @@ export function useTheme() {
 
 export function useThemeState() {
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', 'dark')
+    document.documentElement.setAttribute('data-theme', 'light')
   }, [])
 
-  return { isDark: true, toggleTheme: () => {} }
+  return { isDark: false, toggleTheme: () => {} }
 }

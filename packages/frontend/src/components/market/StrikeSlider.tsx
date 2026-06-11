@@ -32,12 +32,12 @@ export function StrikeSlider({ value, min, max, mu, sigma, onChange }: StrikeSli
         </div>
         <div className="flex gap-3 pb-2.5 text-xs font-mono">
           <span>
-            <span className="text-[rgba(34,211,163,0.6)] text-[10px] uppercase tracking-wider">YES </span>
-            <span className="text-[#22D3A3]">{(py * 100).toFixed(1)}%</span>
+            <span className="text-[rgba(11,122,82,0.6)] text-[10px] uppercase tracking-wider">YES </span>
+            <span className="text-[#0B7A52]">{(py * 100).toFixed(1)}%</span>
           </span>
           <span>
-            <span className="text-[rgba(255,69,96,0.6)] text-[10px] uppercase tracking-wider">NO </span>
-            <span className="text-[#FF4560]">{(pn * 100).toFixed(1)}%</span>
+            <span className="text-[rgba(180,35,24,0.6)] text-[10px] uppercase tracking-wider">NO </span>
+            <span className="text-[#B42318]">{(pn * 100).toFixed(1)}%</span>
           </span>
         </div>
       </div>
@@ -48,7 +48,7 @@ export function StrikeSlider({ value, min, max, mu, sigma, onChange }: StrikeSli
         step={(max - min) / 500}
         onChange={onChange}
       />
-      <div className="flex justify-between text-[10px] font-mono text-[rgba(242,242,242,0.25)]">
+      <div className="flex justify-between text-[10px] font-mono text-[rgba(35,24,18,0.45)]">
         <span>{min.toLocaleString()}</span>
         <span>μ = {mu.toLocaleString()}</span>
         <span>{max.toLocaleString()}</span>

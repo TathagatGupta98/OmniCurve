@@ -47,14 +47,14 @@ export function CreateMarketModal({ open, onClose }: CreateMarketModalProps) {
     <Modal open={open} onClose={handleClose} title="Create Market">
       {step === 'confirmed' ? (
         <div className="text-center space-y-4 py-4">
-          <div className="w-12 h-12 rounded-full bg-[rgba(34,211,163,0.12)] border border-[rgba(34,211,163,0.3)] flex items-center justify-center mx-auto">
+          <div className="w-12 h-12 rounded-full bg-[rgba(11,122,82,0.12)] border border-[rgba(11,122,82,0.3)] flex items-center justify-center mx-auto">
             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path d="M4 10l5 5 7-8" stroke="#22D3A3" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M4 10l5 5 7-8" stroke="#0B7A52" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </div>
           <div>
-            <p className="font-display font-600 text-[#F2F2F2] mb-1">Market Created!</p>
-            <p className="text-xs font-mono text-[rgba(242,242,242,0.45)]">
+            <p className="font-display font-600 text-[#231812] mb-1">Market Created!</p>
+            <p className="text-xs font-mono text-[rgba(35,24,18,0.45)]">
               Your market is live. You&apos;ll be redirected shortly.
             </p>
           </div>
@@ -69,11 +69,11 @@ export function CreateMarketModal({ open, onClose }: CreateMarketModalProps) {
           />
 
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs font-display tracking-wider text-[rgba(242,242,242,0.45)] uppercase">
+            <label className="text-xs font-display tracking-wider text-[rgba(35,24,18,0.45)] uppercase">
               Category
             </label>
             <select
-              className="bg-[rgba(255,255,255,0.04)] border border-[rgba(255,255,255,0.08)] text-[#F2F2F2] text-sm rounded py-2.5 px-3 focus:outline-none focus:border-[rgba(196,18,48,0.5)] transition-colors"
+              className="bg-[rgba(62,44,30,0.04)] border border-[rgba(62,44,30,0.08)] text-[#231812] text-sm rounded py-2.5 px-3 focus:outline-none focus:border-[rgba(200,16,46,0.5)] transition-colors"
               {...register('category')}
             >
               <option value="Crypto">Crypto</option>
@@ -90,7 +90,7 @@ export function CreateMarketModal({ open, onClose }: CreateMarketModalProps) {
             error={errors.sigmaMin?.message}
             {...register('sigmaMin')}
           />
-          <p className="text-xs font-mono text-[rgba(242,242,242,0.35)] -mt-2">
+          <p className="text-xs font-mono text-[rgba(35,24,18,0.35)] -mt-2">
             Minimum standard deviation — prevents LP from setting unrealistically tight distributions.
           </p>
 
@@ -98,8 +98,8 @@ export function CreateMarketModal({ open, onClose }: CreateMarketModalProps) {
             <p
               className={`text-xs font-mono rounded p-3 border ${
                 isUserRejection(error)
-                  ? 'text-[rgba(242,242,242,0.6)] bg-[rgba(255,255,255,0.03)] border-[rgba(255,255,255,0.1)]'
-                  : 'text-[#FF4560] bg-[rgba(255,69,96,0.08)] border-[rgba(255,69,96,0.2)]'
+                  ? 'text-[rgba(35,24,18,0.6)] bg-[rgba(62,44,30,0.03)] border-[rgba(62,44,30,0.1)]'
+                  : 'text-[#B42318] bg-[rgba(180,35,24,0.08)] border-[rgba(180,35,24,0.2)]'
               }`}
             >
               {formatTxError(error)}

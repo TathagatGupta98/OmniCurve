@@ -24,23 +24,23 @@ export default function PageWrapper() {
         <footer className={`border-t py-8 mt-16 transition-colors duration-300 ${
           isDark
             ? 'border-[rgba(255,255,255,0.14)]'
-            : 'border-[rgba(0,0,0,0.18)]'
+            : 'border-[rgba(62,44,30,0.18)]'
         }`}>
           <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className={`text-xs font-mono transition-colors duration-300 ${
-              isDark ? 'text-[rgba(242,242,242,0.55)]' : 'text-[rgba(17,17,17,0.50)]'
+              isDark ? 'text-[rgba(242,242,242,0.55)]' : 'text-[rgba(35,24,18,0.50)]'
             }`}>
               OmniCurve — Arbitrum Sepolia Testnet
             </p>
             <div className={`flex items-center gap-4 text-xs font-mono transition-colors duration-300 ${
-              isDark ? 'text-[rgba(242,242,242,0.55)]' : 'text-[rgba(17,17,17,0.50)]'
+              isDark ? 'text-[rgba(242,242,242,0.55)]' : 'text-[rgba(35,24,18,0.50)]'
             }`}>
               <a
                 href="https://sepolia.arbiscan.io/address/0x1bbdb700863309ab2588c9d64786bd0ac376d150"
                 target="_blank"
                 rel="noreferrer"
                 className={`transition-colors duration-200 ${
-                  isDark ? 'hover:text-[#C41230]' : 'hover:text-[#C41230]'
+                  isDark ? 'hover:text-[#C8102E]' : 'hover:text-[#C8102E]'
                 }`}
               >
                 Factory ↗

@@ -84,11 +84,11 @@ function FragmentBar({ t, x, h, i }: { t: MotionValue<number>; x: number; h: num
     <motion.g style={{ opacity, y }}>
       <rect
         x={bx} y={BASE_Y - noH} width={36} height={noH}
-        fill="rgba(255,69,96,0.25)" stroke="rgba(255,69,96,0.55)" strokeWidth={1}
+        fill="rgba(180,35,24,0.25)" stroke="rgba(180,35,24,0.55)" strokeWidth={1}
       />
       <rect
         x={bx} y={BASE_Y - noH - 3 - yesH} width={36} height={yesH}
-        fill="rgba(34,211,163,0.25)" stroke="rgba(34,211,163,0.55)" strokeWidth={1}
+        fill="rgba(11,122,82,0.25)" stroke="rgba(11,122,82,0.55)" strokeWidth={1}
       />
       <text
         x={bx + 18} y={BASE_Y - noH - yesH - 12} textAnchor="middle"
@@ -117,20 +117,20 @@ function Caption({
 
   return (
     <motion.div
-      style={{ opacity, y, background: 'var(--nav-bg)' }}
-      className="absolute left-4 right-4 bottom-6 sm:left-10 sm:right-auto sm:bottom-10 sm:max-w-md border border-[color:var(--border-dim)] rounded p-5 sm:p-6 backdrop-blur-md pointer-events-none"
+      style={{ opacity, y, background: '#FDF8EE', boxShadow: '0 10px 32px rgba(62,44,30,0.14)' }}
+      className="absolute left-4 right-4 bottom-6 sm:left-10 sm:right-auto sm:bottom-10 sm:max-w-md border border-[rgba(62,44,30,0.18)] rounded p-5 sm:p-6 pointer-events-none"
     >
-      <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-[#C41230] mb-2">
+      <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-[#C8102E] mb-2">
         {num}
       </p>
-      <h3 className="font-display font-700 text-lg sm:text-xl mb-2 text-[color:var(--text-primary)]">
+      <h3 className="font-display font-700 text-lg sm:text-xl mb-2 text-[#231812]">
         {title}
       </h3>
-      <p className="font-serif text-sm sm:text-[15px] leading-relaxed text-[color:var(--text-muted)]">
+      <p className="font-serif text-sm sm:text-[15px] leading-relaxed text-[rgba(35,24,18,0.85)]">
         {children}
       </p>
       {foot && (
-        <p className="font-mono text-[10px] leading-relaxed mt-3 pt-3 border-t border-[color:var(--border-dim)] text-[color:var(--text-subtle)]">
+        <p className="font-mono text-[10px] leading-relaxed mt-3 pt-3 border-t border-[rgba(62,44,30,0.14)] text-[rgba(35,24,18,0.62)]">
           {foot}
         </p>
       )}
@@ -240,13 +240,13 @@ function ScrollStory() {
           ))}
 
           {/* YES / NO areas (appear with the strike) */}
-          <motion.path d={noAreaD} style={{ opacity: strikeOpacity }} fill="rgba(255,69,96,0.13)" />
-          <motion.path d={yesAreaD} style={{ opacity: strikeOpacity }} fill="rgba(34,211,163,0.13)" />
+          <motion.path d={noAreaD} style={{ opacity: strikeOpacity }} fill="rgba(180,35,24,0.13)" />
+          <motion.path d={yesAreaD} style={{ opacity: strikeOpacity }} fill="rgba(11,122,82,0.13)" />
 
           {/* the omni-curve */}
           <motion.path
             d={curveD}
-            style={{ opacity: curveOpacity, filter: 'drop-shadow(0 0 7px rgba(196,18,48,0.45))' }}
+            style={{ opacity: curveOpacity, filter: 'drop-shadow(0 0 7px rgba(200,16,46,0.45))' }}
             fill="none"
             stroke="var(--chart-curve)"
             strokeWidth={2.5}
@@ -256,24 +256,24 @@ function ScrollStory() {
           <motion.line
             x1={muPx} x2={muPx} y1={92} y2={BASE_Y}
             style={{ opacity: muLineO }}
-            stroke="rgba(196,18,48,0.55)" strokeWidth={1} strokeDasharray="4 3"
+            stroke="rgba(200,16,46,0.55)" strokeWidth={1} strokeDasharray="4 3"
           />
           <motion.text
             x={muPx} dx={7} y={104}
             style={{ opacity: muLineO }}
-            fontSize={13} fontFamily="'JetBrains Mono', monospace" fill="#C41230"
+            fontSize={13} fontFamily="'JetBrains Mono', monospace" fill="#C8102E"
           >
             μ
           </motion.text>
 
           {/* ±σ ruler (chapter 03) */}
           <motion.g style={{ opacity: sigmaIndO }}>
-            <motion.line x1={sigmaX1} x2={sigmaX2} y1={300} y2={300} stroke="#C41230" strokeWidth={1} strokeDasharray="2 3" />
-            <motion.line x1={sigmaX1} x2={sigmaX1} y1={293} y2={307} stroke="#C41230" strokeWidth={1} />
-            <motion.line x1={sigmaX2} x2={sigmaX2} y1={293} y2={307} stroke="#C41230" strokeWidth={1} />
+            <motion.line x1={sigmaX1} x2={sigmaX2} y1={300} y2={300} stroke="#C8102E" strokeWidth={1} strokeDasharray="2 3" />
+            <motion.line x1={sigmaX1} x2={sigmaX1} y1={293} y2={307} stroke="#C8102E" strokeWidth={1} />
+            <motion.line x1={sigmaX2} x2={sigmaX2} y1={293} y2={307} stroke="#C8102E" strokeWidth={1} />
             <motion.text
               x={muPx} y={290} textAnchor="middle"
-              fontSize={11} fontFamily="'JetBrains Mono', monospace" fill="#C41230"
+              fontSize={11} fontFamily="'JetBrains Mono', monospace" fill="#C8102E"
             >
               ±σ
             </motion.text>
@@ -283,7 +283,7 @@ function ScrollStory() {
           <motion.line
             x1={strikePx} x2={strikePx} y1={90} y2={BASE_Y}
             style={{ opacity: strikeOpacity }}
-            stroke="#C41230" strokeWidth={1.5}
+            stroke="#C8102E" strokeWidth={1.5}
           />
           <motion.text
             x={strikePx} dx={-8} y={120} textAnchor="end"
@@ -323,11 +323,11 @@ function ScrollStory() {
           <motion.g style={{ opacity: finalO }}>
             <line
               x1={xToPx(FINAL_X)} x2={xToPx(FINAL_X)} y1={80} y2={BASE_Y}
-              stroke="#38BDF8" strokeWidth={1.5} strokeDasharray="2 3"
+              stroke="#0E7490" strokeWidth={1.5} strokeDasharray="2 3"
             />
             <text
               x={xToPx(FINAL_X)} dx={6} y={92}
-              fontSize={11} fontFamily="'JetBrains Mono', monospace" fill="#38BDF8"
+              fontSize={11} fontFamily="'JetBrains Mono', monospace" fill="#0E7490"
             >
               final_price $3,200
             </text>
@@ -335,27 +335,30 @@ function ScrollStory() {
         </svg>
 
         {/* phase indicator — top left */}
-        <div className="absolute top-5 left-4 sm:left-10 pointer-events-none">
-          <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-[color:var(--text-subtle)]">
+        <div
+          className="absolute top-5 left-4 sm:left-10 pointer-events-none rounded px-3.5 py-2.5 border border-[rgba(62,44,30,0.16)]"
+          style={{ background: 'rgba(253,248,238,0.94)', boxShadow: '0 6px 20px rgba(62,44,30,0.10)' }}
+        >
+          <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-[rgba(35,24,18,0.60)]">
             How it works
           </p>
-          <motion.p className="font-mono text-xs tracking-[0.2em] uppercase text-[#C41230] mt-1.5">
+          <motion.p className="font-mono text-xs tracking-[0.2em] uppercase text-[#C8102E] mt-1.5">
             {phaseText}
           </motion.p>
         </div>
 
         {/* live HUD — top right */}
         <motion.div
-          style={{ opacity: hudO, background: 'var(--nav-bg)' }}
-          className="absolute top-5 right-4 sm:right-10 hidden sm:block border border-[color:var(--border-dim)] rounded px-4 py-3 font-mono text-xs backdrop-blur-md pointer-events-none"
+          style={{ opacity: hudO, background: '#FDF8EE', boxShadow: '0 6px 20px rgba(62,44,30,0.10)' }}
+          className="absolute top-5 right-4 sm:right-10 hidden sm:block border border-[rgba(62,44,30,0.18)] rounded px-4 py-3 font-mono text-xs pointer-events-none"
         >
           <div className="flex items-center gap-3 justify-between">
             <span className="text-[color:var(--text-subtle)]">μ</span>
-            <motion.span className="text-[#C41230]">{muText}</motion.span>
+            <motion.span className="text-[#C8102E]">{muText}</motion.span>
           </div>
           <div className="flex items-center gap-3 justify-between mt-1">
             <span className="text-[color:var(--text-subtle)]">σ</span>
-            <motion.span className="text-[#C41230]">{sigmaText}</motion.span>
+            <motion.span className="text-[#C8102E]">{sigmaText}</motion.span>
           </div>
           <motion.div style={{ opacity: strikeOpacity }}>
             <div className="flex items-center gap-3 justify-between mt-2 pt-2 border-t border-[color:var(--border-dim)]">
@@ -376,13 +379,13 @@ function ScrollStory() {
         {/* event chips — top center */}
         <motion.div
           style={{ opacity: curveChipO }}
-          className="absolute top-16 sm:top-5 left-1/2 -translate-x-1/2 border border-[rgba(196,18,48,0.45)] bg-[rgba(196,18,48,0.10)] rounded px-3 py-1.5 font-mono text-[10px] tracking-[0.15em] uppercase text-[#C41230] whitespace-nowrap pointer-events-none"
+          className="absolute top-16 sm:top-5 left-1/2 -translate-x-1/2 border border-[rgba(200,16,46,0.45)] bg-[rgba(200,16,46,0.10)] rounded px-3 py-1.5 font-mono text-[10px] tracking-[0.15em] uppercase text-[#C8102E] whitespace-nowrap pointer-events-none"
         >
           CurveUpdated · μ 3,500→3,358 · σ 800→714
         </motion.div>
         <motion.div
           style={{ opacity: verdictO, y: verdictY }}
-          className="absolute top-16 sm:top-5 left-1/2 -translate-x-1/2 border border-[rgba(34,211,163,0.45)] bg-[rgba(34,211,163,0.10)] rounded px-3 py-1.5 font-mono text-[10px] tracking-[0.15em] uppercase text-[color:var(--accent-yes)] whitespace-nowrap pointer-events-none"
+          className="absolute top-16 sm:top-5 left-1/2 -translate-x-1/2 border border-[rgba(11,122,82,0.45)] bg-[rgba(11,122,82,0.10)] rounded px-3 py-1.5 font-mono text-[10px] tracking-[0.15em] uppercase text-[color:var(--accent-yes)] whitespace-nowrap pointer-events-none"
         >
           final 3,200 ≥ strike 3,000 → YES pays $1/token
         </motion.div>
@@ -391,7 +394,7 @@ function ScrollStory() {
         <div className="absolute right-1.5 sm:right-3 top-[12%] bottom-[12%] w-px bg-[color:var(--border-dim)]">
           <motion.div
             style={{ scaleY: t, transformOrigin: 'top' }}
-            className="absolute inset-0 bg-[#C41230]"
+            className="absolute inset-0 bg-[#C8102E]"
           />
         </div>
 
@@ -457,7 +460,7 @@ function Hero() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-        className="font-mono text-[10px] sm:text-xs tracking-[0.4em] uppercase text-[#C41230] mb-6"
+        className="font-mono text-[10px] sm:text-xs tracking-[0.4em] uppercase text-[#C8102E] mb-6"
       >
         Protocol Documentation
       </motion.p>
@@ -489,7 +492,7 @@ function Hero() {
           d={HERO_CURVE}
           stroke="var(--chart-curve)"
           strokeWidth={2.5}
-          style={{ filter: 'drop-shadow(0 0 7px rgba(196,18,48,0.45))' }}
+          style={{ filter: 'drop-shadow(0 0 7px rgba(200,16,46,0.45))' }}
           initial={{ pathLength: 0 }}
           animate={{ pathLength: 1 }}
           transition={{ delay: 0.5, duration: 1.8, ease: 'easeInOut' }}
@@ -499,8 +502,8 @@ function Hero() {
           animate={{ opacity: 1 }}
           transition={{ delay: 2.1, duration: 0.6 }}
         >
-          <line x1={360} x2={360} y1={34} y2={198} stroke="rgba(196,18,48,0.5)" strokeWidth={1} strokeDasharray="4 3" />
-          <text x={368} y={46} fontSize={13} fontFamily="'JetBrains Mono', monospace" fill="#C41230">μ</text>
+          <line x1={360} x2={360} y1={34} y2={198} stroke="rgba(200,16,46,0.5)" strokeWidth={1} strokeDasharray="4 3" />
+          <text x={368} y={46} fontSize={13} fontFamily="'JetBrains Mono', monospace" fill="#C8102E">μ</text>
           <line x1={20} x2={700} y1={198} y2={198} stroke="var(--chart-axis)" strokeWidth={1} />
         </motion.g>
       </svg>
@@ -517,7 +520,7 @@ function Hero() {
         <motion.span
           animate={{ y: [0, 7, 0] }}
           transition={{ repeat: Infinity, duration: 1.8, ease: 'easeInOut' }}
-          className="block w-px h-8 bg-[#C41230]"
+          className="block w-px h-8 bg-[#C8102E]"
         />
       </motion.div>
     </section>
@@ -549,7 +552,7 @@ function Reveal({ children, delay = 0, className = '' }: {
 function SectionHead({ num, title, sub }: { num: string; title: string; sub?: string }) {
   return (
     <Reveal className="mb-10">
-      <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-[#C41230] mb-3">{num}</p>
+      <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-[#C8102E] mb-3">{num}</p>
       <h2 className="font-display font-800 text-3xl sm:text-4xl tracking-tight text-[color:var(--text-primary)]">
         {title}
       </h2>
@@ -589,7 +592,7 @@ function Playground() {
           displayValue={`$${strike.toLocaleString()}`}
         />
         <div className="grid grid-cols-2 gap-4 text-center">
-          <div className="border border-[rgba(34,211,163,0.3)] bg-[rgba(34,211,163,0.07)] rounded p-4">
+          <div className="border border-[rgba(11,122,82,0.3)] bg-[rgba(11,122,82,0.07)] rounded p-4">
             <p className="text-[10px] font-mono tracking-[0.25em] uppercase mb-1 text-[color:var(--accent-yes)] opacity-70">
               P(YES)
             </p>
@@ -598,7 +601,7 @@ function Playground() {
               1 − Φ((x−μ)/σ)
             </p>
           </div>
-          <div className="border border-[rgba(255,69,96,0.3)] bg-[rgba(255,69,96,0.07)] rounded p-4">
+          <div className="border border-[rgba(180,35,24,0.3)] bg-[rgba(180,35,24,0.07)] rounded p-4">
             <p className="text-[10px] font-mono tracking-[0.25em] uppercase mb-1 text-[color:var(--accent-no)] opacity-70">
               P(NO)
             </p>
@@ -698,7 +701,7 @@ export default function Docs() {
                 className="border border-[color:var(--border-dim)] rounded p-5 h-full"
                 style={{ background: 'var(--bg-surface)' }}
               >
-                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-[#C41230] mb-3">
+                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-[#C8102E] mb-3">
                   {p.label}
                 </p>
                 <div className="font-mono text-[13px] leading-relaxed whitespace-pre text-[color:var(--text-primary)] overflow-x-auto">
@@ -725,7 +728,7 @@ export default function Docs() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Reveal>
             <div
-              className="border rounded p-6 h-full border-[rgba(34,211,163,0.3)]"
+              className="border rounded p-6 h-full border-[rgba(11,122,82,0.3)]"
               style={{ background: 'var(--bg-surface)' }}
             >
               <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-[color:var(--accent-yes)] mb-4">
@@ -752,10 +755,10 @@ export default function Docs() {
           </Reveal>
           <Reveal delay={0.1}>
             <div
-              className="border rounded p-6 h-full border-[rgba(196,18,48,0.35)]"
+              className="border rounded p-6 h-full border-[rgba(200,16,46,0.35)]"
               style={{ background: 'var(--bg-surface)' }}
             >
-              <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-[#C41230] mb-4">
+              <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-[#C8102E] mb-4">
                 Liquidity providers
               </p>
               <ol className="space-y-3.5">
@@ -766,7 +769,7 @@ export default function Docs() {
                   'After resolution, collateral locked behind losing bets returns to the pool.',
                 ].map((s, i) => (
                   <li key={s} className="flex gap-3">
-                    <span className="font-mono text-xs text-[#C41230] mt-0.5 flex-shrink-0">
+                    <span className="font-mono text-xs text-[#C8102E] mt-0.5 flex-shrink-0">
                       0{i + 1}
                     </span>
                     <span className="font-serif text-sm leading-relaxed text-[color:var(--text-muted)]">
@@ -797,7 +800,7 @@ export default function Docs() {
                 <span className="font-mono text-[10px] text-[color:var(--text-subtle)]">
                   STEP 0{i + 1}
                 </span>
-                <p className="font-mono text-[13px] text-[#C41230] mt-2 break-all">{s.fn}()</p>
+                <p className="font-mono text-[13px] text-[#C8102E] mt-2 break-all">{s.fn}()</p>
                 <p className="font-display font-600 text-sm mt-2 text-[color:var(--text-primary)]">
                   {s.title}
                 </p>
@@ -839,7 +842,7 @@ export default function Docs() {
               className="border border-[color:var(--border-dim)] rounded p-5 font-mono text-xs leading-loose text-[color:var(--text-muted)] overflow-x-auto"
               style={{ background: 'var(--bg-surface)' }}
             >
-              <p className="text-[#C41230]">OmniCurveFactory.create_market()</p>
+              <p className="text-[#C8102E]">OmniCurveFactory.create_market()</p>
               <p className="pl-3">├─ AMM Proxy ──DELEGATECALL──▶ AMM Impl</p>
               <p className="pl-3">├─ Router Proxy ──DELEGATECALL──▶ Router Impl</p>
               <p className="pl-3">├─ LP Token Proxy ──DELEGATECALL──▶ LP Impl</p>
@@ -851,15 +854,15 @@ export default function Docs() {
         <Reveal delay={0.2}>
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-8 font-mono text-[10px] tracking-[0.15em] uppercase text-[color:var(--text-subtle)]">
             <span>Arbitrum Stylus</span>
-            <span className="text-[#C41230]">·</span>
+            <span className="text-[#C8102E]">·</span>
             <span>Rust → WASM</span>
-            <span className="text-[#C41230]">·</span>
+            <span className="text-[#C8102E]">·</span>
             <span>EIP-1167 + CREATE2</span>
-            <span className="text-[#C41230]">·</span>
+            <span className="text-[#C8102E]">·</span>
             <span>WAD fixed-point</span>
-            <span className="text-[#C41230]">·</span>
+            <span className="text-[#C8102E]">·</span>
             <span>MasterChef fees</span>
-            <span className="text-[#C41230]">·</span>
+            <span className="text-[#C8102E]">·</span>
             <span>Non-custodial</span>
           </div>
         </Reveal>
@@ -878,9 +881,9 @@ export default function Docs() {
               preserveAspectRatio="xMidYMax slice"
               fill="none"
             >
-              <path d={HERO_CURVE} stroke="#C41230" strokeWidth={2} />
+              <path d={HERO_CURVE} stroke="#C8102E" strokeWidth={2} />
             </svg>
-            <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-[#C41230] mb-4 relative">
+            <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-[#C8102E] mb-4 relative">
               End of transmission
             </p>
             <h2 className="font-display font-800 text-3xl sm:text-4xl tracking-tight text-[color:var(--text-primary)] relative">
@@ -899,7 +902,7 @@ export default function Docs() {
               </Link>
               <button
                 onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                className="inline-flex items-center justify-center px-8 py-3.5 border border-[color:var(--border)] font-display font-600 text-sm tracking-wider rounded text-[color:var(--text-muted)] hover:text-[color:var(--text-primary)] hover:border-[#C41230] transition-all"
+                className="inline-flex items-center justify-center px-8 py-3.5 border border-[color:var(--border)] font-display font-600 text-sm tracking-wider rounded text-[color:var(--text-muted)] hover:text-[color:var(--text-primary)] hover:border-[#C8102E] transition-all"
               >
                 Replay the story ↑
               </button>

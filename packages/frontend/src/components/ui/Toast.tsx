@@ -36,27 +36,27 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
       transition={{ duration: 0.2 }}
       className={`flex items-start gap-3 p-4 rounded border backdrop-blur-sm max-w-sm shadow-2xl cursor-pointer`}
       style={{
-        background: '#111111',
+        background: '#FDF8EE',
         borderColor:
           toast.type === 'success'
-            ? 'rgba(34,211,163,0.3)'
+            ? 'rgba(11,122,82,0.3)'
             : toast.type === 'error'
-              ? 'rgba(255,69,96,0.3)'
-              : 'rgba(196,18,48,0.3)',
+              ? 'rgba(180,35,24,0.3)'
+              : 'rgba(200,16,46,0.3)',
       }}
       onClick={() => onDismiss(toast.id)}
     >
       <div className="mt-0.5 flex-shrink-0">
         {toast.type === 'success' && (
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <circle cx="8" cy="8" r="7" stroke="#22D3A3" strokeWidth="1.5" />
-            <path d="M5 8l2 2 4-4" stroke="#22D3A3" strokeWidth="1.5" strokeLinecap="round" />
+            <circle cx="8" cy="8" r="7" stroke="#0B7A52" strokeWidth="1.5" />
+            <path d="M5 8l2 2 4-4" stroke="#0B7A52" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
         )}
         {toast.type === 'error' && (
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <circle cx="8" cy="8" r="7" stroke="#FF4560" strokeWidth="1.5" />
-            <path d="M6 6l4 4M10 6l-4 4" stroke="#FF4560" strokeWidth="1.5" strokeLinecap="round" />
+            <circle cx="8" cy="8" r="7" stroke="#B42318" strokeWidth="1.5" />
+            <path d="M6 6l4 4M10 6l-4 4" stroke="#B42318" strokeWidth="1.5" strokeLinecap="round" />
           </svg>
         )}
         {toast.type === 'pending' && (
@@ -67,17 +67,17 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
             fill="none"
             className="animate-spin"
           >
-            <circle cx="8" cy="8" r="6" stroke="rgba(196,18,48,0.25)" strokeWidth="2" />
+            <circle cx="8" cy="8" r="6" stroke="rgba(200,16,46,0.25)" strokeWidth="2" />
             <path
               d="M8 2a6 6 0 016 6"
-              stroke="#C41230"
+              stroke="#C8102E"
               strokeWidth="2"
               strokeLinecap="round"
             />
           </svg>
         )}
       </div>
-      <p className="text-sm text-[#F2F2F2] leading-relaxed font-mono">{toast.message}</p>
+      <p className="text-sm text-[#231812] leading-relaxed font-mono">{toast.message}</p>
     </motion.div>
   )
 }

@@ -111,10 +111,10 @@ export function LPPanel({ market }: LPPanelProps) {
   if (!address) {
     return (
       <div className="px-6 py-12 text-center space-y-2">
-        <p className="text-sm font-mono text-[rgba(242,242,242,0.40)]">
+        <p className="text-sm font-mono text-[rgba(35,24,18,0.40)]">
           Connect your wallet to provide liquidity
         </p>
-        <p className="text-xs font-mono text-[rgba(242,242,242,0.28)]">
+        <p className="text-xs font-mono text-[rgba(35,24,18,0.28)]">
           LPs earn 1% of every trade's volume
         </p>
       </div>
@@ -129,28 +129,28 @@ export function LPPanel({ market }: LPPanelProps) {
 
         {/* LP Stats bar */}
         {lpStats && (
-          <div className="grid grid-cols-3 gap-3 p-4 rounded-lg bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.10)]">
+          <div className="grid grid-cols-3 gap-3 p-4 rounded-lg bg-[rgba(62,44,30,0.03)] border border-[rgba(62,44,30,0.10)]">
             <div className="text-center">
-              <p className="text-[9px] font-display tracking-widest text-[rgba(242,242,242,0.45)] uppercase mb-1">
+              <p className="text-[9px] font-display tracking-widest text-[rgba(35,24,18,0.45)] uppercase mb-1">
                 Your LP Balance
               </p>
-              <p className="font-mono text-sm text-[#C41230] font-600">
+              <p className="font-mono text-sm text-[#C8102E] font-600">
                 {lpStats.lpTokenBalance.toFixed(4)}
               </p>
             </div>
             <div className="text-center">
-              <p className="text-[9px] font-display tracking-widest text-[rgba(242,242,242,0.45)] uppercase mb-1">
+              <p className="text-[9px] font-display tracking-widest text-[rgba(35,24,18,0.45)] uppercase mb-1">
                 Pending Fees
               </p>
-              <p className="font-mono text-sm text-[#22D3A3] font-600">
+              <p className="font-mono text-sm text-[#0B7A52] font-600">
                 ${lpStats.pendingRewards.toFixed(4)}
               </p>
             </div>
             <div className="text-center">
-              <p className="text-[9px] font-display tracking-widest text-[rgba(242,242,242,0.45)] uppercase mb-1">
+              <p className="text-[9px] font-display tracking-widest text-[rgba(35,24,18,0.45)] uppercase mb-1">
                 Pool TVL
               </p>
-              <p className="font-mono text-sm text-[rgba(242,242,242,0.80)]">
+              <p className="font-mono text-sm text-[rgba(35,24,18,0.80)]">
                 ${totalLiqFloat.toFixed(2)}
               </p>
             </div>
@@ -161,14 +161,14 @@ export function LPPanel({ market }: LPPanelProps) {
         {tab === 'deposit' && (
           <>
             {/* Explainer */}
-            <div className="rounded-lg bg-[rgba(196,18,48,0.06)] border border-[rgba(196,18,48,0.15)] px-4 py-3.5 space-y-1">
-              <p className="text-xs font-display tracking-wider text-[#C41230] uppercase">
+            <div className="rounded-lg bg-[rgba(200,16,46,0.06)] border border-[rgba(200,16,46,0.15)] px-4 py-3.5 space-y-1">
+              <p className="text-xs font-display tracking-wider text-[#C8102E] uppercase">
                 How LP deposits work
               </p>
-              <p className="text-[11px] font-mono text-[rgba(242,242,242,0.55)] leading-relaxed">
+              <p className="text-[11px] font-mono text-[rgba(35,24,18,0.55)] leading-relaxed">
                 Your USDC becomes collateral that backs every trade in this market.
                 You receive LP tokens representing your share of the pool, and earn
-                <span className="text-[#C41230]"> 1% of every trade</span> in proportion to your share.
+                <span className="text-[#C8102E]"> 1% of every trade</span> in proportion to your share.
               </p>
             </div>
 
@@ -183,7 +183,7 @@ export function LPPanel({ market }: LPPanelProps) {
 
             {!market.tradesStarted ? (
               <div className="space-y-3">
-                <p className="text-[11px] font-mono text-[rgba(242,242,242,0.45)] leading-relaxed">
+                <p className="text-[11px] font-mono text-[rgba(35,24,18,0.45)] leading-relaxed">
                   This market has no trades yet. Set the initial distribution parameters below
                   to seed the probability curve.
                 </p>
@@ -205,14 +205,14 @@ export function LPPanel({ market }: LPPanelProps) {
                   />
                 </div>
                 {needsDistribution && depositAmt > 0 && (
-                  <p className="text-xs font-mono text-[#C41230] bg-[rgba(196,18,48,0.06)] border border-[rgba(196,18,48,0.18)] rounded-lg p-3">
+                  <p className="text-xs font-mono text-[#C8102E] bg-[rgba(200,16,46,0.06)] border border-[rgba(200,16,46,0.18)] rounded-lg p-3">
                     Set μ and σ above to initialize the pool distribution.
                   </p>
                 )}
               </div>
             ) : (
-              <div className="rounded-lg bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.10)] px-4 py-3">
-                <p className="text-[11px] font-mono text-[rgba(242,242,242,0.50)] leading-relaxed">
+              <div className="rounded-lg bg-[rgba(62,44,30,0.03)] border border-[rgba(62,44,30,0.10)] px-4 py-3">
+                <p className="text-[11px] font-mono text-[rgba(35,24,18,0.50)] leading-relaxed">
                   Trading has started — the curve is now driven by bets. Your deposit
                   will be added at the current distribution.
                 </p>
@@ -221,8 +221,8 @@ export function LPPanel({ market }: LPPanelProps) {
 
             {depositAmt > 0 && (
               <div className="flex items-center justify-between text-xs font-mono px-1">
-                <span className="text-[rgba(242,242,242,0.50)]">Estimated LP tokens you'll receive</span>
-                <span className="text-[#F2F2F2] font-600">{estimatedShares.toFixed(4)} OCLP</span>
+                <span className="text-[rgba(35,24,18,0.50)]">Estimated LP tokens you'll receive</span>
+                <span className="text-[#231812] font-600">{estimatedShares.toFixed(4)} OCLP</span>
               </div>
             )}
 
@@ -242,21 +242,21 @@ export function LPPanel({ market }: LPPanelProps) {
         {tab === 'withdraw' && (
           <>
             {/* Explainer */}
-            <div className="rounded-lg bg-[rgba(255,255,255,0.03)] border border-[rgba(255,255,255,0.10)] px-4 py-3.5 space-y-1">
-              <p className="text-xs font-display tracking-wider text-[rgba(242,242,242,0.60)] uppercase">
+            <div className="rounded-lg bg-[rgba(62,44,30,0.03)] border border-[rgba(62,44,30,0.10)] px-4 py-3.5 space-y-1">
+              <p className="text-xs font-display tracking-wider text-[rgba(35,24,18,0.60)] uppercase">
                 How withdrawals work
               </p>
-              <p className="text-[11px] font-mono text-[rgba(242,242,242,0.50)] leading-relaxed">
+              <p className="text-[11px] font-mono text-[rgba(35,24,18,0.50)] leading-relaxed">
                 Burn your LP tokens to reclaim your proportional share of pool collateral.
                 The USDC you receive may differ from your deposit if the pool's size changed.
               </p>
             </div>
 
             <div className="flex items-center justify-between text-xs font-mono">
-              <span className="text-[rgba(242,242,242,0.55)]">Your LP balance</span>
+              <span className="text-[rgba(35,24,18,0.55)]">Your LP balance</span>
               <button
                 type="button"
-                className="font-mono text-[#C41230] hover:underline disabled:no-underline disabled:opacity-40"
+                className="font-mono text-[#C8102E] hover:underline disabled:no-underline disabled:opacity-40"
                 disabled={lpBalance <= 0}
                 onClick={() => setWithdrawAmount(String(lpBalance))}
               >
@@ -276,12 +276,12 @@ export function LPPanel({ market }: LPPanelProps) {
             {withdrawAmt > 0 && !exceedsBalance && (
               <div className="space-y-2 text-xs font-mono">
                 <div className="flex justify-between">
-                  <span className="text-[rgba(242,242,242,0.55)]">Estimated USDC received</span>
-                  <span className="text-[#C41230] font-600">${estimatedUsdc.toFixed(4)}</span>
+                  <span className="text-[rgba(35,24,18,0.55)]">Estimated USDC received</span>
+                  <span className="text-[#C8102E] font-600">${estimatedUsdc.toFixed(4)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[rgba(242,242,242,0.55)]">Estimated network fee</span>
-                  <span className="text-[rgba(242,242,242,0.70)]">
+                  <span className="text-[rgba(35,24,18,0.55)]">Estimated network fee</span>
+                  <span className="text-[rgba(35,24,18,0.70)]">
                     {withdrawGas ? `~${Number(formatEther(withdrawGas)).toFixed(6)} ETH` : '—'}
                   </span>
                 </div>
@@ -304,32 +304,32 @@ export function LPPanel({ market }: LPPanelProps) {
         {tab === 'claim' && (
           <>
             {/* Explainer */}
-            <div className="rounded-lg bg-[rgba(34,211,163,0.05)] border border-[rgba(34,211,163,0.18)] px-4 py-3.5 space-y-1">
-              <p className="text-xs font-display tracking-wider text-[rgba(34,211,163,0.80)] uppercase">
+            <div className="rounded-lg bg-[rgba(11,122,82,0.05)] border border-[rgba(11,122,82,0.18)] px-4 py-3.5 space-y-1">
+              <p className="text-xs font-display tracking-wider text-[rgba(11,122,82,0.80)] uppercase">
                 How fee claims work
               </p>
-              <p className="text-[11px] font-mono text-[rgba(242,242,242,0.50)] leading-relaxed">
+              <p className="text-[11px] font-mono text-[rgba(35,24,18,0.50)] leading-relaxed">
                 1% of every trade is distributed to LPs in proportion to their pool share.
-                Claiming does <span className="text-[#F2F2F2]">not</span> remove your liquidity —
+                Claiming does <span className="text-[#231812]">not</span> remove your liquidity —
                 your OCLP tokens remain intact.
               </p>
             </div>
 
-            <div className="rounded-xl border border-[rgba(34,211,163,0.30)] bg-[rgba(34,211,163,0.08)] p-5 text-center space-y-1">
-              <p className="text-xs font-display tracking-widest text-[rgba(242,242,242,0.55)] uppercase">
+            <div className="rounded-xl border border-[rgba(11,122,82,0.30)] bg-[rgba(11,122,82,0.08)] p-5 text-center space-y-1">
+              <p className="text-xs font-display tracking-widest text-[rgba(35,24,18,0.55)] uppercase">
                 Pending Fees
               </p>
-              <p className="font-mono text-3xl text-[#22D3A3] font-600">
+              <p className="font-mono text-3xl text-[#0B7A52] font-600">
                 ${lpStats?.pendingRewards.toFixed(6) ?? '0.000000'}
               </p>
-              <p className="text-xs font-mono text-[rgba(242,242,242,0.45)]">
+              <p className="text-xs font-mono text-[rgba(35,24,18,0.45)]">
                 USDC earned from trading activity
               </p>
             </div>
 
             <Button
               variant="ghost"
-              className="w-full border-[#22D3A3] text-[#22D3A3] hover:bg-[rgba(34,211,163,0.08)]"
+              className="w-full border-[#0B7A52] text-[#0B7A52] hover:bg-[rgba(11,122,82,0.08)]"
               loading={isWorking}
               disabled={isWorking || (lpStats?.pendingRewards ?? 0) <= 0}
               onClick={claim}
@@ -344,8 +344,8 @@ export function LPPanel({ market }: LPPanelProps) {
           <p
             className={`text-xs font-mono rounded-lg p-3 border ${
               isUserRejection(error)
-                ? 'text-[rgba(242,242,242,0.70)] bg-[rgba(255,255,255,0.03)] border-[rgba(255,255,255,0.14)]'
-                : 'text-[#FF4560] bg-[rgba(255,69,96,0.07)] border-[rgba(255,69,96,0.18)]'
+                ? 'text-[rgba(35,24,18,0.70)] bg-[rgba(62,44,30,0.03)] border-[rgba(62,44,30,0.14)]'
+                : 'text-[#B42318] bg-[rgba(180,35,24,0.07)] border-[rgba(180,35,24,0.18)]'
             }`}
           >
             {formatTxError(error)}
@@ -355,13 +355,13 @@ export function LPPanel({ market }: LPPanelProps) {
         {/* ── Confirmed ────────────────────────────────────────── */}
         {isConfirmed && (
           <div className="text-center space-y-3 py-2">
-            <p className="text-sm font-mono text-[#22D3A3]">Transaction confirmed!</p>
+            <p className="text-sm font-mono text-[#0B7A52]">Transaction confirmed!</p>
             {txHash && (
               <a
                 href={`https://sepolia.arbiscan.io/tx/${txHash}`}
                 target="_blank"
                 rel="noreferrer"
-                className="text-xs font-mono text-[rgba(242,242,242,0.55)] hover:text-[#C41230] block"
+                className="text-xs font-mono text-[rgba(35,24,18,0.55)] hover:text-[#C8102E] block"
               >
                 View on Arbiscan ↗
               </a>

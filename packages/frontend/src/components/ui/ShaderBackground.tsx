@@ -40,11 +40,11 @@ export default function ShaderBackground({ darkMode = true }: Props) {
 
     const bg1Vec = darkMode
       ? 'vec4(0.122, 0.059, 0.059, 1.0)'
-      : 'vec4(0.984, 0.976, 0.969, 1.0)'
+      : 'vec4(0.976, 0.955, 0.914, 1.0)'
 
     const bg2Vec = darkMode
       ? 'vec4(0.173, 0.106, 0.106, 1.0)'
-      : 'vec4(0.961, 0.953, 0.945, 1.0)'
+      : 'vec4(0.949, 0.923, 0.866, 1.0)'
 
     // Dark: additive blend → lines glow on dark crimson background
     // Light: mix blend  → lines tint into cream without blowing out
@@ -222,7 +222,7 @@ export default function ShaderBackground({ darkMode = true }: Props) {
           position: 'fixed',
           inset: 0,
           zIndex: -11,
-          backgroundColor: darkMode ? '#1f0f0f' : '#FFFFFF',
+          backgroundColor: darkMode ? '#1f0f0f' : '#F6F0E3',
           transition: 'background-color 0.4s ease',
           pointerEvents: 'none',
         }}

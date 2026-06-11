@@ -70,7 +70,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             </span>
           )}
         </div>
-        {error && <p className="text-xs text-[#FF4560] font-mono">{error}</p>}
+        {error && <p className="text-xs text-[#B42318] font-mono">{error}</p>}
       </div>
     )
   },

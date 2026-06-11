@@ -6,9 +6,9 @@ function readChartTokens() {
   const s = getComputedStyle(document.documentElement)
   const isLight = document.documentElement.getAttribute('data-theme') === 'light'
   return {
-    curve:    s.getPropertyValue('--chart-curve').trim()     || '#F2F2F2',
-    axis:     s.getPropertyValue('--chart-axis').trim()      || 'rgba(255,255,255,0.12)',
-    tickText: s.getPropertyValue('--chart-tick-text').trim() || 'rgba(242,242,242,0.45)',
+    curve:    s.getPropertyValue('--chart-curve').trim()     || '#231812',
+    axis:     s.getPropertyValue('--chart-axis').trim()      || 'rgba(62,44,30,0.12)',
+    tickText: s.getPropertyValue('--chart-tick-text').trim() || 'rgba(35,24,18,0.45)',
     glow:     s.getPropertyValue('--chart-glow').trim()      === '1',
     isLight,
   }
@@ -164,7 +164,7 @@ export function GaussianChart({
         g.append('path')
           .datum(noPoints)
           .attr('d', areaGen as unknown as string)
-          .attr('fill', 'rgba(255,69,96,0.12)')
+          .attr('fill', 'rgba(180,35,24,0.12)')
           .attr('stroke', 'none')
       }
 
@@ -174,7 +174,7 @@ export function GaussianChart({
         g.append('path')
           .datum(yesPoints)
           .attr('d', areaGen as unknown as string)
-          .attr('fill', 'rgba(34,211,163,0.12)')
+          .attr('fill', 'rgba(11,122,82,0.12)')
           .attr('stroke', 'none')
       }
     } else {
@@ -182,7 +182,7 @@ export function GaussianChart({
       g.append('path')
         .datum(points)
         .attr('d', areaGen as unknown as string)
-        .attr('fill', 'rgba(34,211,163,0.06)')
+        .attr('fill', 'rgba(11,122,82,0.06)')
         .attr('stroke', 'none')
     }
 
@@ -197,7 +197,7 @@ export function GaussianChart({
     if (tokens.glow) {
       curveLine.attr('filter', 'url(#glow)')
     } else if (tokens.isLight) {
-      curveLine.style('filter', 'drop-shadow(0 0 5px rgba(196,18,48,0.55))')
+      curveLine.style('filter', 'drop-shadow(0 0 5px rgba(200,16,46,0.55))')
     }
 
     // μ dashed line
@@ -207,7 +207,7 @@ export function GaussianChart({
       .attr('x2', muPos)
       .attr('y1', 0)
       .attr('y2', innerH)
-      .attr('stroke', 'rgba(196,18,48,0.4)')
+      .attr('stroke', 'rgba(200,16,46,0.4)')
       .attr('stroke-width', 1)
       .attr('stroke-dasharray', '4 3')
 
@@ -215,7 +215,7 @@ export function GaussianChart({
       g.append('text')
         .attr('x', muPos + 4)
         .attr('y', 10)
-        .attr('fill', '#C41230')
+        .attr('fill', '#C8102E')
         .attr('font-size', 11)
         .attr('font-family', 'JetBrains Mono, monospace')
         .text('μ')
@@ -229,7 +229,7 @@ export function GaussianChart({
         .attr('x2', sPos)
         .attr('y1', 0)
         .attr('y2', innerH)
-        .attr('stroke', '#C41230')
+        .attr('stroke', '#C8102E')
         .attr('stroke-width', 1.5)
         .attr('opacity', 0.8)
 
@@ -242,7 +242,7 @@ export function GaussianChart({
         g.append('text')
           .attr('x', sPos - 8)
           .attr('y', 18)
-          .attr('fill', '#FF4560')
+          .attr('fill', '#B42318')
           .attr('font-size', 10)
           .attr('font-family', 'JetBrains Mono, monospace')
           .attr('text-anchor', 'end')
@@ -254,7 +254,7 @@ export function GaussianChart({
         g.append('text')
           .attr('x', sPos + 8)
           .attr('y', 18)
-          .attr('fill', '#22D3A3')
+          .attr('fill', '#0B7A52')
           .attr('font-size', 10)
           .attr('font-family', 'JetBrains Mono, monospace')
           .attr('text-anchor', 'start')
@@ -272,7 +272,7 @@ export function GaussianChart({
         .attr('x2', spPos)
         .attr('y1', 0)
         .attr('y2', innerH)
-        .attr('stroke', '#38BDF8')
+        .attr('stroke', '#0E7490')
         .attr('stroke-width', 1.5)
         .attr('stroke-dasharray', '2 3')
         .attr('opacity', 0.9)
@@ -282,7 +282,7 @@ export function GaussianChart({
       g.append('text')
         .attr('x', spPos + (anchor === 'end' ? -5 : 5))
         .attr('y', innerH - 6)
-        .attr('fill', '#38BDF8')
+        .attr('fill', '#0E7490')
         .attr('font-size', 10)
         .attr('font-family', 'JetBrains Mono, monospace')
         .attr('text-anchor', anchor)
