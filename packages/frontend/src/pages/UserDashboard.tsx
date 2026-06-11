@@ -1,9 +1,9 @@
-import { useEffect } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { useAccount } from 'wagmi'
 import { usePortfolio } from '@/hooks/usePortfolio'
 import { useTheme } from '@/hooks/useTheme'
 import { Badge } from '@/components/ui/Badge'
+import { ConnectButton } from '@/components/wallet/ConnectButton'
 
 const DARK = {
   walletCard:      'bg-[rgba(10,10,10,0.55)] backdrop-blur-md border-[rgba(255,255,255,0.10)]',
@@ -48,25 +48,33 @@ const LIGHT = {
 } as const
 
 export default function UserDashboard() {
-  // status starts as 'reconnecting' while wagmi restores the session — only a
-  // settled 'disconnected' should bounce the user away, otherwise a connected
-  // wallet gets redirected before reconnection finishes.
+  // status starts as 'reconnecting' while wagmi restores the session — show
+  // skeletons until it settles so a connected wallet doesn't flash the
+  // connect prompt before reconnection finishes.
   const { address, status } = useAccount()
-  const navigate = useNavigate()
   const { isDark } = useTheme()
   const T = isDark ? DARK : LIGHT
   const { data: portfolio, isLoading } = usePortfolio(address)
 
-  useEffect(() => {
-    if (status === 'disconnected') navigate('/')
-  }, [status, navigate])
-
-  if (!address) {
+  if (!address && (status === 'connecting' || status === 'reconnecting')) {
     return (
       <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10 space-y-4">
         {[...Array(3)].map((_, i) => (
           <div key={i} className={`h-20 rounded animate-pulse transition-colors duration-300 ${T.skeleton}`} />
         ))}
+      </div>
+    )
+  }
+
+  if (!address) {
+    return (
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-10">
+        <div className={`flex flex-col items-center gap-4 text-center py-20 border rounded transition-colors duration-300 ${T.emptyBorder} ${T.emptyWrap}`}>
+          <p className={`font-mono text-sm transition-colors duration-300 ${T.emptyText}`}>
+            Wallet not connected — connect your wallet to see your positions
+          </p>
+          <ConnectButton />
+        </div>
       </div>
     )
   }
