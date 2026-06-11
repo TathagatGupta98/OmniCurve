@@ -34,3 +34,4 @@ coverage/
 cache/
 broadcast/
 packages/contracts/lib/
+.playwright-mcp
