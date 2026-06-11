@@ -31,10 +31,11 @@ const walletGroups = [
     groupName: 'Recommended',
     wallets: [
       injectedWallet,
-      metaMaskWallet,
       coinbaseWallet,
-      // Only offer WalletConnect when a valid project ID is configured.
-      ...(projectId ? [walletConnectWallet] : []),
+      // metaMaskWallet and walletConnectWallet both construct a WalletConnect
+      // connector internally, which throws without a valid project ID — so both
+      // are gated. MetaMask still connects via injectedWallet.
+      ...(projectId ? [metaMaskWallet, walletConnectWallet] : []),
     ],
   },
 ]

@@ -1,321 +1,912 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { motion, useScroll, useTransform, MotionValue } from 'framer-motion'
 import { GaussianChart } from '@/components/market/GaussianChart'
 import { Slider } from '@/components/ui/Slider'
-import { useTheme } from '@/hooks/useTheme'
 import { pYes, pNo } from '@/lib/math'
 
-const SECTIONS = [
-  { id: 'problem', label: 'The Problem' },
-  { id: 'solution', label: 'The Solution' },
-  { id: 'pricing', label: 'How Pricing Works' },
-  { id: 'traders', label: 'For Traders' },
-  { id: 'lps', label: 'For LPs' },
-  { id: 'architecture', label: 'Architecture' },
-  { id: 'risks', label: 'Known Risks' },
+/* ════════════════════════════════════════════════════════════════════════
+   Stage geometry — fixed viewBox, ETH-price domain matching Market #0
+   (prior μ=3500 σ=800; the verified on-chain trade: 2 USDC YES @ 3000
+   moved μ 3500 → 3358 and σ 800 → 714).
+   ════════════════════════════════════════════════════════════════════════ */
+
+const VB_W = 1000
+const VB_H = 560
+const PLOT = { left: 70, right: 70, top: 70, bottom: 90 }
+const PW = VB_W - PLOT.left - PLOT.right
+const PH = VB_H - PLOT.top - PLOT.bottom
+const BASE_Y = VB_H - PLOT.bottom
+const DOMAIN: [number, number] = [600, 6400]
+const PEAK = 0.86
+
+const BET_X = 3000
+const FINAL_X = 3200
+const PRIOR_MU = 3500
+const PRIOR_SIGMA = 800
+
+const xToPx = (x: number) => PLOT.left + ((x - DOMAIN[0]) / (DOMAIN[1] - DOMAIN[0])) * PW
+const yToPx = (v: number) => BASE_Y - v * PH
+
+const bell = (x: number, mu: number, sigma: number) => {
+  const z = (x - mu) / sigma
+  return Math.exp(-0.5 * z * z)
+}
+
+function linePath(mu: number, sigma: number, peak: number): string {
+  const n = 120
+  let d = ''
+  for (let i = 0; i <= n; i++) {
+    const x = DOMAIN[0] + ((DOMAIN[1] - DOMAIN[0]) * i) / n
+    d += `${i === 0 ? 'M' : 'L'}${xToPx(x).toFixed(1)},${yToPx(bell(x, mu, sigma) * peak).toFixed(1)}`
+  }
+  return d
+}
+
+function areaPath(mu: number, sigma: number, peak: number, from: number, to: number): string {
+  const lo = Math.max(DOMAIN[0], Math.min(from, to))
+  const hi = Math.min(DOMAIN[1], Math.max(from, to))
+  if (hi - lo < 1) return ''
+  const n = 80
+  let d = `M${xToPx(lo).toFixed(1)},${BASE_Y}`
+  for (let i = 0; i <= n; i++) {
+    const x = lo + ((hi - lo) * i) / n
+    d += `L${xToPx(x).toFixed(1)},${yToPx(bell(x, mu, sigma) * peak).toFixed(1)}`
+  }
+  return d + `L${xToPx(hi).toFixed(1)},${BASE_Y}Z`
+}
+
+const X_TICKS = [1000, 2000, 3000, 4000, 5000, 6000]
+
+/* ── Fragmented binary pools (chapter 01) ───────────────────────────────── */
+
+const FRAGMENTS = [
+  { x: 2300, h: 0.3 },
+  { x: 2900, h: 0.48 },
+  { x: 3500, h: 0.58 },
+  { x: 4100, h: 0.46 },
+  { x: 4700, h: 0.34 },
+  { x: 5300, h: 0.24 },
+  { x: 5900, h: 0.18 },
 ]
 
-const DARK = {
-  sidebarLabel:   'text-[rgba(242,242,242,0.3)]',
-  sidebarLink:    'text-[rgba(242,242,242,0.45)] hover:text-[#F2F2F2] hover:bg-[rgba(255,255,255,0.03)]',
-  docTitle:       'text-[#F2F2F2]',
-  docSubtitle:    'text-[rgba(242,242,242,0.5)]',
-  sectionTitle:   'text-[#F2F2F2] border-[rgba(255,255,255,0.06)]',
-  bodyText:       'text-[rgba(242,242,242,0.7)]',
-  strong:         'text-[#F2F2F2]',
-  yesText:        'text-[#22D3A3]',
-  noText:         'text-[#FF4560]',
-  codeBlock:      'bg-[rgba(196,18,48,0.05)] border-[rgba(196,18,48,0.15)]',
-  codeYes:        'text-[#22D3A3]',
-  codeNo:         'text-[#FF4560]',
-  miniChart:      'bg-[#111111] border-[rgba(255,255,255,0.08)]',
-  pYesBg:         'bg-[rgba(34,211,163,0.06)] border-[rgba(34,211,163,0.15)]',
-  pYesLabel:      'text-[rgba(34,211,163,0.6)]',
-  pYesVal:        'text-[#22D3A3]',
-  pNoBg:          'bg-[rgba(255,69,96,0.06)] border-[rgba(255,69,96,0.15)]',
-  pNoLabel:       'text-[rgba(255,69,96,0.6)]',
-  pNoVal:         'text-[#FF4560]',
-  pFormula:       'text-[rgba(242,242,242,0.35)]',
-  codeBox:        'bg-[#111111] border-[rgba(255,255,255,0.07)] text-[rgba(242,242,242,0.6)]',
-  code:           'text-[#C41230] font-mono text-sm',
-  riskCard:       'bg-[#111111] border-[rgba(255,255,255,0.08)]',
-  riskTitle:      'text-[#F2F2F2]',
-  riskDesc:       'text-[rgba(242,242,242,0.55)]',
-} as const
+function FragmentBar({ t, x, h, i }: { t: MotionValue<number>; x: number; h: number; i: number }) {
+  const inS = 0.02 + i * 0.013
+  const opacity = useTransform(t, [inS, inS + 0.035, 0.115, 0.165], [0, 1, 1, 0])
+  const y = useTransform(t, [inS, inS + 0.05], [18, 0])
+  const py = pYes(x, PRIOR_MU, PRIOR_SIGMA)
+  const total = h * PH
+  const noH = total * (1 - py)
+  const yesH = total * py
+  const bx = xToPx(x) - 18
 
-const LIGHT = {
-  sidebarLabel:   'text-[rgba(17,17,17,0.32)]',
-  sidebarLink:    'text-[rgba(17,17,17,0.5)] hover:text-[#111111] hover:bg-[rgba(17,17,17,0.04)]',
-  docTitle:       'text-[#111111]',
-  docSubtitle:    'text-[rgba(17,17,17,0.5)]',
-  sectionTitle:   'text-[#111111] border-[rgba(0,0,0,0.2)]',
-  bodyText:       'text-[rgba(17,17,17,0.65)]',
-  strong:         'text-[#111111]',
-  yesText:        'text-[#059669]',
-  noText:         'text-[#dc2626]',
-  codeBlock:      'bg-[rgba(196,18,48,0.05)] border-[rgba(196,18,48,0.18)]',
-  codeYes:        'text-[#059669]',
-  codeNo:         'text-[#dc2626]',
-  miniChart:      'bg-[rgba(17,17,17,0.03)] border-[rgba(0,0,0,0.2)]',
-  pYesBg:         'bg-[rgba(5,150,105,0.06)] border-[rgba(5,150,105,0.2)]',
-  pYesLabel:      'text-[rgba(5,150,105,0.7)]',
-  pYesVal:        'text-[#059669]',
-  pNoBg:          'bg-[rgba(220,38,38,0.06)] border-[rgba(220,38,38,0.2)]',
-  pNoLabel:       'text-[rgba(220,38,38,0.7)]',
-  pNoVal:         'text-[#dc2626]',
-  pFormula:       'text-[rgba(17,17,17,0.35)]',
-  codeBox:        'bg-[rgba(17,17,17,0.03)] border-[rgba(0,0,0,0.2)] text-[rgba(17,17,17,0.6)]',
-  code:           'text-[#C41230] font-mono text-sm',
-  riskCard:       'bg-[rgba(17,17,17,0.03)] border-[rgba(0,0,0,0.2)]',
-  riskTitle:      'text-[#111111]',
-  riskDesc:       'text-[rgba(17,17,17,0.55)]',
-} as const
-
-function Section({ id, title, children, T }: {
-  id: string
-  title: string
-  children: React.ReactNode
-  T: typeof DARK | typeof LIGHT
-}) {
   return (
-    <section id={id} className="scroll-mt-20 mb-16">
-      <h2 className={`font-display font-700 text-2xl mb-6 pb-3 border-b transition-colors duration-300 ${T.sectionTitle}`}>
-        {title}
-      </h2>
-      <div className={`space-y-4 leading-relaxed font-serif transition-colors duration-300 ${T.bodyText}`}>{children}</div>
-    </section>
+    <motion.g style={{ opacity, y }}>
+      <rect
+        x={bx} y={BASE_Y - noH} width={36} height={noH}
+        fill="rgba(255,69,96,0.25)" stroke="rgba(255,69,96,0.55)" strokeWidth={1}
+      />
+      <rect
+        x={bx} y={BASE_Y - noH - 3 - yesH} width={36} height={yesH}
+        fill="rgba(34,211,163,0.25)" stroke="rgba(34,211,163,0.55)" strokeWidth={1}
+      />
+      <text
+        x={bx + 18} y={BASE_Y - noH - yesH - 12} textAnchor="middle"
+        fontSize={10} fontFamily="'JetBrains Mono', monospace" fill="var(--chart-tick-text)"
+      >
+        Y/N
+      </text>
+    </motion.g>
   )
 }
 
-function InteractivePricingChart({ T }: { T: typeof DARK | typeof LIGHT }) {
-  const mu = 100
-  const sigma = 15
-  const [strike, setStrike] = useState(100)
+/* ── Crossfading caption (one per chapter) ──────────────────────────────── */
 
-  const py = pYes(strike, mu, sigma)
-  const pn = pNo(strike, mu, sigma)
+function Caption({
+  t, win, num, title, children, foot,
+}: {
+  t: MotionValue<number>
+  win: [number, number, number, number]
+  num: string
+  title: string
+  children: React.ReactNode
+  foot?: string
+}) {
+  const opacity = useTransform(t, win, [0, 1, 1, 0])
+  const y = useTransform(t, win, [28, 0, 0, -18])
 
   return (
-    <div className={`border rounded p-5 space-y-4 not-italic transition-colors duration-300 ${T.miniChart}`}>
-      <GaussianChart mu={mu} sigma={sigma} strikeX={strike} height={200} />
-      <Slider
-        value={strike}
-        min={mu - 3 * sigma}
-        max={mu + 3 * sigma}
-        step={0.5}
-        onChange={setStrike}
-        label={`Strike: ${strike.toFixed(1)}`}
-      />
-      <div className="grid grid-cols-2 gap-4 text-center">
-        <div className={`border rounded p-3 transition-colors duration-300 ${T.pYesBg}`}>
-          <p className={`text-[10px] font-display tracking-widest uppercase mb-1 transition-colors duration-300 ${T.pYesLabel}`}>P(YES)</p>
-          <p className={`font-mono text-xl transition-colors duration-300 ${T.pYesVal}`}>{(py * 100).toFixed(2)}%</p>
-          <p className={`text-xs font-mono mt-0.5 transition-colors duration-300 ${T.pFormula}`}>
-            1 − CDF({strike.toFixed(0)}, μ, σ)
+    <motion.div
+      style={{ opacity, y, background: 'var(--nav-bg)' }}
+      className="absolute left-4 right-4 bottom-6 sm:left-10 sm:right-auto sm:bottom-10 sm:max-w-md border border-[color:var(--border-dim)] rounded p-5 sm:p-6 backdrop-blur-md pointer-events-none"
+    >
+      <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-[#C41230] mb-2">
+        {num}
+      </p>
+      <h3 className="font-display font-700 text-lg sm:text-xl mb-2 text-[color:var(--text-primary)]">
+        {title}
+      </h3>
+      <p className="font-serif text-sm sm:text-[15px] leading-relaxed text-[color:var(--text-muted)]">
+        {children}
+      </p>
+      {foot && (
+        <p className="font-mono text-[10px] leading-relaxed mt-3 pt-3 border-t border-[color:var(--border-dim)] text-[color:var(--text-subtle)]">
+          {foot}
+        </p>
+      )}
+    </motion.div>
+  )
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   The pinned scroll story — six chapters on one morphing Gaussian stage
+   ════════════════════════════════════════════════════════════════════════ */
+
+function ScrollStory() {
+  const ref = useRef<HTMLDivElement>(null)
+  const { scrollYProgress: t } = useScroll({ target: ref, offset: ['start start', 'end end'] })
+
+  /* — curve state, scroll-driven — */
+  const mu = useTransform(t, [0, 0.66, 0.745, 1], [PRIOR_MU, PRIOR_MU, 3358, 3358])
+  const sigma = useTransform(
+    t,
+    [0, 0.24, 0.3, 0.36, 0.41, 0.66, 0.745, 1],
+    [PRIOR_SIGMA, PRIOR_SIGMA, 1150, 580, PRIOR_SIGMA, PRIOR_SIGMA, 714, 714],
+  )
+  const peak = useTransform(t, [0.115, 0.2], [0, PEAK])
+  const curveOpacity = useTransform(t, [0.115, 0.19], [0, 1])
+
+  const strike = useTransform(t, [0.43, 0.545, 0.565, 0.615], [1300, 5300, 5300, BET_X])
+  const strikeOpacity = useTransform(t, [0.4, 0.44], [0, 1])
+
+  /* — derived SVG paths — */
+  const curveD = useTransform([mu, sigma, peak], (v: number[]) => linePath(v[0], v[1], v[2]))
+  const noAreaD = useTransform([mu, sigma, peak, strike], (v: number[]) =>
+    areaPath(v[0], v[1], v[2], DOMAIN[0], v[3]),
+  )
+  const yesAreaD = useTransform([mu, sigma, peak, strike], (v: number[]) =>
+    areaPath(v[0], v[1], v[2], v[3], DOMAIN[1]),
+  )
+
+  /* — markers — */
+  const muPx = useTransform(mu, xToPx)
+  const strikePx = useTransform(strike, xToPx)
+  const muLineO = useTransform(t, [0.19, 0.23], [0, 1])
+  const sigmaIndO = useTransform(t, [0.24, 0.27, 0.385, 0.415], [0, 1, 1, 0])
+  const sigmaX1 = useTransform([mu, sigma], (v: number[]) => xToPx(v[0] - v[1]))
+  const sigmaX2 = useTransform([mu, sigma], (v: number[]) => xToPx(v[0] + v[1]))
+
+  /* — the bet (chapter 05) — */
+  const betR = useTransform(t, [0.625, 0.655], [0, 7])
+  const ringR = useTransform(t, [0.625, 0.7], [4, 30])
+  const ringO = useTransform(t, [0.62, 0.632, 0.7], [0, 0.7, 0])
+  const betLabelO = useTransform(t, [0.63, 0.665], [0, 1])
+  const betCy = useTransform([mu, sigma], (v: number[]) => yToPx(bell(BET_X, v[0], v[1]) * PEAK))
+  const curveChipO = useTransform(t, [0.7, 0.755, 0.8, 0.84], [0, 1, 1, 0])
+
+  /* — settlement (chapter 06) — */
+  const finalO = useTransform(t, [0.8, 0.85], [0, 1])
+  const verdictO = useTransform(t, [0.86, 0.92], [0, 1])
+  const verdictY = useTransform(t, [0.86, 0.92], [12, 0])
+
+  /* — HUD readouts — */
+  const hudO = useTransform(t, [0.19, 0.23], [0, 1])
+  const muText = useTransform(mu, (v) => Math.round(v).toLocaleString())
+  const sigmaText = useTransform(sigma, (v) => Math.round(v).toLocaleString())
+  const strikeText = useTransform(strike, (v) => Math.round(v).toLocaleString())
+  const pYesText = useTransform([strike, mu, sigma], (v: number[]) =>
+    `${(pYes(v[0], v[1], v[2]) * 100).toFixed(1)}%`,
+  )
+  const pNoText = useTransform([strike, mu, sigma], (v: number[]) =>
+    `${(pNo(v[0], v[1], v[2]) * 100).toFixed(1)}%`,
+  )
+
+  const phaseText = useTransform(t, (v): string => {
+    if (v < 0.15) return '01 — FRAGMENTATION'
+    if (v < 0.24) return '02 — THE COLLAPSE'
+    if (v < 0.4) return '03 — BELIEF, DRAWN'
+    if (v < 0.62) return '04 — PRICE = AREA'
+    if (v < 0.79) return '05 — SKIN IN THE GAME'
+    return '06 — REALITY SETTLES'
+  })
+
+  return (
+    <div ref={ref} className="relative h-[620vh]">
+      <div className="sticky top-14 h-[calc(100vh-3.5rem)] overflow-hidden flex items-start justify-center lg:justify-end px-1 lg:pr-12">
+        {/* the stage — top-aligned and right-shifted on desktop so the
+            caption card (bottom-left) never covers the curve */}
+        <svg
+          viewBox={`0 0 ${VB_W} ${VB_H}`}
+          preserveAspectRatio="xMidYMid meet"
+          className="w-full max-w-6xl h-[78%] mt-4 px-2"
+        >
+          {/* baseline + ticks */}
+          <line x1={PLOT.left} x2={VB_W - PLOT.right} y1={BASE_Y} y2={BASE_Y} stroke="var(--chart-axis)" strokeWidth={1} />
+          {X_TICKS.map((v) => (
+            <g key={v}>
+              <line x1={xToPx(v)} x2={xToPx(v)} y1={BASE_Y} y2={BASE_Y + 5} stroke="var(--chart-axis)" strokeWidth={1} />
+              <text
+                x={xToPx(v)} y={BASE_Y + 22} textAnchor="middle"
+                fontSize={11} fontFamily="'JetBrains Mono', monospace" fill="var(--chart-tick-text)"
+              >
+                ${v / 1000}k
+              </text>
+            </g>
+          ))}
+
+          {/* chapter 01 — fragmented binary pools */}
+          {FRAGMENTS.map((f, i) => (
+            <FragmentBar key={f.x} t={t} x={f.x} h={f.h} i={i} />
+          ))}
+
+          {/* YES / NO areas (appear with the strike) */}
+          <motion.path d={noAreaD} style={{ opacity: strikeOpacity }} fill="rgba(255,69,96,0.13)" />
+          <motion.path d={yesAreaD} style={{ opacity: strikeOpacity }} fill="rgba(34,211,163,0.13)" />
+
+          {/* the omni-curve */}
+          <motion.path
+            d={curveD}
+            style={{ opacity: curveOpacity, filter: 'drop-shadow(0 0 7px rgba(196,18,48,0.45))' }}
+            fill="none"
+            stroke="var(--chart-curve)"
+            strokeWidth={2.5}
+          />
+
+          {/* μ marker */}
+          <motion.line
+            x1={muPx} x2={muPx} y1={92} y2={BASE_Y}
+            style={{ opacity: muLineO }}
+            stroke="rgba(196,18,48,0.55)" strokeWidth={1} strokeDasharray="4 3"
+          />
+          <motion.text
+            x={muPx} dx={7} y={104}
+            style={{ opacity: muLineO }}
+            fontSize={13} fontFamily="'JetBrains Mono', monospace" fill="#C41230"
+          >
+            μ
+          </motion.text>
+
+          {/* ±σ ruler (chapter 03) */}
+          <motion.g style={{ opacity: sigmaIndO }}>
+            <motion.line x1={sigmaX1} x2={sigmaX2} y1={300} y2={300} stroke="#C41230" strokeWidth={1} strokeDasharray="2 3" />
+            <motion.line x1={sigmaX1} x2={sigmaX1} y1={293} y2={307} stroke="#C41230" strokeWidth={1} />
+            <motion.line x1={sigmaX2} x2={sigmaX2} y1={293} y2={307} stroke="#C41230" strokeWidth={1} />
+            <motion.text
+              x={muPx} y={290} textAnchor="middle"
+              fontSize={11} fontFamily="'JetBrains Mono', monospace" fill="#C41230"
+            >
+              ±σ
+            </motion.text>
+          </motion.g>
+
+          {/* strike line (chapter 04 onward) */}
+          <motion.line
+            x1={strikePx} x2={strikePx} y1={90} y2={BASE_Y}
+            style={{ opacity: strikeOpacity }}
+            stroke="#C41230" strokeWidth={1.5}
+          />
+          <motion.text
+            x={strikePx} dx={-8} y={120} textAnchor="end"
+            style={{ opacity: strikeOpacity }}
+            fontSize={11} fontFamily="'JetBrains Mono', monospace" fill="var(--accent-no)"
+          >
+            NO ←
+          </motion.text>
+          <motion.text
+            x={strikePx} dx={8} y={120}
+            style={{ opacity: strikeOpacity }}
+            fontSize={11} fontFamily="'JetBrains Mono', monospace" fill="var(--accent-yes)"
+          >
+            → YES
+          </motion.text>
+
+          {/* the bet lands (chapter 05) — dot glued to the curve at its strike */}
+          <motion.circle
+            cx={xToPx(BET_X)} cy={betCy} r={ringR}
+            style={{ opacity: ringO }}
+            fill="none" stroke="var(--accent-yes)" strokeWidth={1.5}
+          />
+          <motion.circle
+            cx={xToPx(BET_X)} cy={betCy} r={betR}
+            style={{ opacity: betLabelO }}
+            fill="var(--accent-yes)"
+          />
+          <motion.text
+            x={xToPx(BET_X)} dx={-10} y={170} textAnchor="end"
+            style={{ opacity: betLabelO }}
+            fontSize={11} fontFamily="'JetBrains Mono', monospace" fill="var(--accent-yes)"
+          >
+            +2 USDC · YES @ $3,000
+          </motion.text>
+
+          {/* settlement — observed final price, not μ (chapter 06) */}
+          <motion.g style={{ opacity: finalO }}>
+            <line
+              x1={xToPx(FINAL_X)} x2={xToPx(FINAL_X)} y1={80} y2={BASE_Y}
+              stroke="#38BDF8" strokeWidth={1.5} strokeDasharray="2 3"
+            />
+            <text
+              x={xToPx(FINAL_X)} dx={6} y={92}
+              fontSize={11} fontFamily="'JetBrains Mono', monospace" fill="#38BDF8"
+            >
+              final_price $3,200
+            </text>
+          </motion.g>
+        </svg>
+
+        {/* phase indicator — top left */}
+        <div className="absolute top-5 left-4 sm:left-10 pointer-events-none">
+          <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-[color:var(--text-subtle)]">
+            How it works
           </p>
+          <motion.p className="font-mono text-xs tracking-[0.2em] uppercase text-[#C41230] mt-1.5">
+            {phaseText}
+          </motion.p>
         </div>
-        <div className={`border rounded p-3 transition-colors duration-300 ${T.pNoBg}`}>
-          <p className={`text-[10px] font-display tracking-widest uppercase mb-1 transition-colors duration-300 ${T.pNoLabel}`}>P(NO)</p>
-          <p className={`font-mono text-xl transition-colors duration-300 ${T.pNoVal}`}>{(pn * 100).toFixed(2)}%</p>
-          <p className={`text-xs font-mono mt-0.5 transition-colors duration-300 ${T.pFormula}`}>
-            CDF({strike.toFixed(0)}, μ, σ)
-          </p>
+
+        {/* live HUD — top right */}
+        <motion.div
+          style={{ opacity: hudO, background: 'var(--nav-bg)' }}
+          className="absolute top-5 right-4 sm:right-10 hidden sm:block border border-[color:var(--border-dim)] rounded px-4 py-3 font-mono text-xs backdrop-blur-md pointer-events-none"
+        >
+          <div className="flex items-center gap-3 justify-between">
+            <span className="text-[color:var(--text-subtle)]">μ</span>
+            <motion.span className="text-[#C41230]">{muText}</motion.span>
+          </div>
+          <div className="flex items-center gap-3 justify-between mt-1">
+            <span className="text-[color:var(--text-subtle)]">σ</span>
+            <motion.span className="text-[#C41230]">{sigmaText}</motion.span>
+          </div>
+          <motion.div style={{ opacity: strikeOpacity }}>
+            <div className="flex items-center gap-3 justify-between mt-2 pt-2 border-t border-[color:var(--border-dim)]">
+              <span className="text-[color:var(--text-subtle)]">strike</span>
+              <motion.span className="text-[color:var(--text-primary)]">{strikeText}</motion.span>
+            </div>
+            <div className="flex items-center gap-3 justify-between mt-1">
+              <span className="text-[color:var(--text-subtle)]">P(YES)</span>
+              <motion.span className="text-[color:var(--accent-yes)]">{pYesText}</motion.span>
+            </div>
+            <div className="flex items-center gap-3 justify-between mt-1">
+              <span className="text-[color:var(--text-subtle)]">P(NO)</span>
+              <motion.span className="text-[color:var(--accent-no)]">{pNoText}</motion.span>
+            </div>
+          </motion.div>
+        </motion.div>
+
+        {/* event chips — top center */}
+        <motion.div
+          style={{ opacity: curveChipO }}
+          className="absolute top-16 sm:top-5 left-1/2 -translate-x-1/2 border border-[rgba(196,18,48,0.45)] bg-[rgba(196,18,48,0.10)] rounded px-3 py-1.5 font-mono text-[10px] tracking-[0.15em] uppercase text-[#C41230] whitespace-nowrap pointer-events-none"
+        >
+          CurveUpdated · μ 3,500→3,358 · σ 800→714
+        </motion.div>
+        <motion.div
+          style={{ opacity: verdictO, y: verdictY }}
+          className="absolute top-16 sm:top-5 left-1/2 -translate-x-1/2 border border-[rgba(34,211,163,0.45)] bg-[rgba(34,211,163,0.10)] rounded px-3 py-1.5 font-mono text-[10px] tracking-[0.15em] uppercase text-[color:var(--accent-yes)] whitespace-nowrap pointer-events-none"
+        >
+          final 3,200 ≥ strike 3,000 → YES pays $1/token
+        </motion.div>
+
+        {/* scroll progress rail */}
+        <div className="absolute right-1.5 sm:right-3 top-[12%] bottom-[12%] w-px bg-[color:var(--border-dim)]">
+          <motion.div
+            style={{ scaleY: t, transformOrigin: 'top' }}
+            className="absolute inset-0 bg-[#C41230]"
+          />
         </div>
+
+        {/* captions */}
+        <Caption t={t} win={[0.02, 0.05, 0.115, 0.145]} num="01 / 06" title="Fragmentation">
+          Today's prediction markets ask the same question over and over. Will ETH clear $2k?
+          $3k? $4k? Every strike is its own yes/no pool — its own order book, its own thin
+          slice of capital.
+        </Caption>
+        <Caption t={t} win={[0.15, 0.18, 0.21, 0.24]} num="02 / 06" title="The collapse">
+          OmniCurve collapses every strike into one pool, governed by a single Gaussian
+          curve. Liquidity is never fragmented again: one curve prices every outcome at once.
+        </Caption>
+        <Caption t={t} win={[0.25, 0.28, 0.37, 0.4]} num="03 / 06" title="Belief, drawn">
+          The bell is the market's belief about one continuous outcome. μ is the consensus;
+          σ is its uncertainty — wide when the market is unsure, tight as conviction builds.
+        </Caption>
+        <Caption t={t} win={[0.43, 0.46, 0.59, 0.62]} num="04 / 06" title="Price = area">
+          Choose any strike x — not just a listed one. YES costs the area under the curve to
+          the right of x; NO costs the area to the left. P(YES) = 1 − Φ((x−μ)/σ), computed
+          entirely on-chain.
+        </Caption>
+        <Caption
+          t={t}
+          win={[0.645, 0.675, 0.765, 0.79]}
+          num="05 / 06"
+          title="Skin in the game"
+          foot="Verified on-chain: this exact 2 USDC trade moved Market #0 on Arbitrum Sepolia."
+        >
+          Every bet folds its stake into the curve — a stake-weighted average of all strikes.
+          Bettors move μ and σ; liquidity providers never can. Moving the market always costs
+          capital at risk: manipulation-resistant by construction.
+        </Caption>
+        <Caption t={t} win={[0.815, 0.845, 0.96, 0.995]} num="06 / 06" title="Reality settles">
+          μ is belief, never the verdict. The market settles against the observed final
+          price: a YES at strike x pays $1 per token iff final ≥ x. Dragging the curve
+          around can't change who wins.
+        </Caption>
       </div>
     </div>
   )
 }
 
-export default function Docs() {
-  const { isDark } = useTheme()
-  const T = isDark ? DARK : LIGHT
+/* ════════════════════════════════════════════════════════════════════════
+   Hero — self-drawing curve + invitation to scroll
+   ════════════════════════════════════════════════════════════════════════ */
+
+const HERO_CURVE = (() => {
+  let d = ''
+  for (let i = 0; i <= 100; i++) {
+    const x = 20 + (680 * i) / 100
+    const z = (x - 360) / 100
+    const y = 198 - 168 * Math.exp(-0.5 * z * z)
+    d += `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`
+  }
+  return d
+})()
+
+function Hero() {
+  return (
+    <section className="relative min-h-[calc(100vh-3.5rem)] flex flex-col items-center justify-center px-6 overflow-hidden">
+      <motion.p
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+        className="font-mono text-[10px] sm:text-xs tracking-[0.4em] uppercase text-[#C41230] mb-6"
+      >
+        Protocol Documentation
+      </motion.p>
+
+      <motion.h1
+        initial={{ opacity: 0, y: 28 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.15, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+        className="font-display font-800 tracking-tight leading-[0.95] text-center text-[color:var(--text-primary)]"
+        style={{ fontSize: 'clamp(2.6rem, 7vw, 5.2rem)' }}
+      >
+        The market
+        <br />
+        is a curve.
+      </motion.h1>
+
+      <motion.p
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.35, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+        className="font-serif italic text-base sm:text-lg max-w-lg text-center leading-relaxed mt-6 text-[color:var(--text-muted)]"
+      >
+        One Gaussian replaces a thousand binary pools. Scroll — and the protocol
+        will explain itself.
+      </motion.p>
+
+      <svg viewBox="0 0 720 220" className="w-full max-w-2xl mt-10" fill="none">
+        <motion.path
+          d={HERO_CURVE}
+          stroke="var(--chart-curve)"
+          strokeWidth={2.5}
+          style={{ filter: 'drop-shadow(0 0 7px rgba(196,18,48,0.45))' }}
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ delay: 0.5, duration: 1.8, ease: 'easeInOut' }}
+        />
+        <motion.g
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 2.1, duration: 0.6 }}
+        >
+          <line x1={360} x2={360} y1={34} y2={198} stroke="rgba(196,18,48,0.5)" strokeWidth={1} strokeDasharray="4 3" />
+          <text x={368} y={46} fontSize={13} fontFamily="'JetBrains Mono', monospace" fill="#C41230">μ</text>
+          <line x1={20} x2={700} y1={198} y2={198} stroke="var(--chart-axis)" strokeWidth={1} />
+        </motion.g>
+      </svg>
+
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 2.4, duration: 0.8 }}
+        className="absolute bottom-8 flex flex-col items-center gap-2"
+      >
+        <span className="font-mono text-[10px] tracking-[0.35em] uppercase text-[color:var(--text-subtle)]">
+          Scroll
+        </span>
+        <motion.span
+          animate={{ y: [0, 7, 0] }}
+          transition={{ repeat: Infinity, duration: 1.8, ease: 'easeInOut' }}
+          className="block w-px h-8 bg-[#C41230]"
+        />
+      </motion.div>
+    </section>
+  )
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   Below the story — reveal-on-scroll reference sections
+   ════════════════════════════════════════════════════════════════════════ */
+
+function Reveal({ children, delay = 0, className = '' }: {
+  children: React.ReactNode
+  delay?: number
+  className?: string
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 26 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: '-60px' }}
+      transition={{ delay, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  )
+}
+
+function SectionHead({ num, title, sub }: { num: string; title: string; sub?: string }) {
+  return (
+    <Reveal className="mb-10">
+      <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-[#C41230] mb-3">{num}</p>
+      <h2 className="font-display font-800 text-3xl sm:text-4xl tracking-tight text-[color:var(--text-primary)]">
+        {title}
+      </h2>
+      {sub && (
+        <p className="font-serif italic text-base mt-3 max-w-xl text-[color:var(--text-muted)]">{sub}</p>
+      )}
+    </Reveal>
+  )
+}
+
+/* ── 07 — interactive playground ────────────────────────────────────────── */
+
+function Playground() {
+  const mu = PRIOR_MU
+  const sigma = PRIOR_SIGMA
+  const [strike, setStrike] = useState(BET_X)
+
+  const py = pYes(strike, mu, sigma)
+  const pn = pNo(strike, mu, sigma)
+  const stake = 100
+  const yesTokens = py > 0.001 ? (stake * 0.99) / py : 0
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${isDark ? 'bg-[#0A0A0A]' : 'bg-[#F3EFE8]'}`}>
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10 flex gap-10">
-      {/* Sticky sidebar */}
-      <aside className="hidden lg:block w-52 flex-shrink-0">
-        <div className="sticky top-24">
-          <p className={`text-[10px] font-display tracking-widest uppercase mb-4 transition-colors duration-300 ${T.sidebarLabel}`}>
-            Contents
-          </p>
-          <nav className="space-y-0.5">
-            {SECTIONS.map((s) => (
-              <a
-                key={s.id}
-                href={`#${s.id}`}
-                className={`block px-3 py-2 text-xs font-display rounded transition-colors duration-200 ${T.sidebarLink}`}
-              >
-                {s.label}
-              </a>
-            ))}
-          </nav>
+    <Reveal>
+      <div
+        className="border border-[color:var(--border-dim)] rounded p-5 sm:p-7 space-y-5"
+        style={{ background: 'var(--bg-surface)' }}
+      >
+        <GaussianChart mu={mu} sigma={sigma} strikeX={strike} height={230} />
+        <Slider
+          value={strike}
+          min={mu - 3 * sigma}
+          max={mu + 3 * sigma}
+          step={10}
+          onChange={setStrike}
+          label="Strike price"
+          displayValue={`$${strike.toLocaleString()}`}
+        />
+        <div className="grid grid-cols-2 gap-4 text-center">
+          <div className="border border-[rgba(34,211,163,0.3)] bg-[rgba(34,211,163,0.07)] rounded p-4">
+            <p className="text-[10px] font-mono tracking-[0.25em] uppercase mb-1 text-[color:var(--accent-yes)] opacity-70">
+              P(YES)
+            </p>
+            <p className="font-mono text-2xl text-[color:var(--accent-yes)]">{(py * 100).toFixed(2)}%</p>
+            <p className="text-[11px] font-mono mt-1 text-[color:var(--text-subtle)]">
+              1 − Φ((x−μ)/σ)
+            </p>
+          </div>
+          <div className="border border-[rgba(255,69,96,0.3)] bg-[rgba(255,69,96,0.07)] rounded p-4">
+            <p className="text-[10px] font-mono tracking-[0.25em] uppercase mb-1 text-[color:var(--accent-no)] opacity-70">
+              P(NO)
+            </p>
+            <p className="font-mono text-2xl text-[color:var(--accent-no)]">{(pn * 100).toFixed(2)}%</p>
+            <p className="text-[11px] font-mono mt-1 text-[color:var(--text-subtle)]">
+              Φ((x−μ)/σ)
+            </p>
+          </div>
         </div>
-      </aside>
+        <p className="font-mono text-xs text-center pt-1 text-[color:var(--text-subtle)]">
+          $100 on YES @ ${strike.toLocaleString()} → ~{yesTokens.toFixed(1)} tokens (after 1% fee)
+          → pays <span className="text-[color:var(--accent-yes)]">${yesTokens.toFixed(2)}</span> if
+          final ≥ strike
+        </p>
+      </div>
+    </Reveal>
+  )
+}
 
-      {/* Main content */}
-      <main className="flex-1 min-w-0">
-        <div className="mb-12">
-          <h1 className={`font-display font-800 text-4xl tracking-tight mb-3 transition-colors duration-300 ${T.docTitle}`}>
-            Documentation
-          </h1>
-          <p className={`font-serif italic text-lg transition-colors duration-300 ${T.docSubtitle}`}>
-            How OmniCurve works, from first principles to contract architecture.
-          </p>
-        </div>
+/* ── 08 — the math ──────────────────────────────────────────────────────── */
 
-        <Section id="problem" title="The Problem" T={T}>
-          <p>
-            Traditional prediction markets create discrete binary pools: "Will BTC hit $100k? Yes/No." Each
-            price point needs its own pool — fragmenting liquidity across hundreds of separate markets.
-          </p>
-          <p>
-            A market-maker offering prices at $90k, $95k, $100k, $105k, and $110k needs five separate pools,
-            each with its own liquidity providers and depth. This means capital is locked up inefficiently,
-            and thin pools produce poor price discovery.
-          </p>
-        </Section>
+const MATH_PLATES = [
+  {
+    label: 'Pricing',
+    lines: ['P_YES(x) = 1 − Φ((x − μ) / σ)', 'P_NO(x)  =     Φ((x − μ) / σ)'],
+    note: 'Probability is area under the Gaussian. Any continuous strike gets an instant, mathematically derived price.',
+  },
+  {
+    label: 'The curve',
+    lines: ['μ = Σ wᵢ·xᵢ / Σ wᵢ', 'σ = √( Σ wᵢ·xᵢ² / Σ wᵢ − μ² )'],
+    note: 'Each bet contributes weight wᵢ (its net stake) at strike xᵢ. The owner’s seed is just a prior with virtual weight that dilutes as real bets arrive.',
+  },
+  {
+    label: 'On-chain stack',
+    lines: ['erf ≈ Abramowitz–Stegun (err < 1.5e−7)', 'eˣ = 18-term Taylor · √ = Newton'],
+    note: 'All of it in WAD (1e18) fixed-point I256 — ~11 significant digits, computed in Rust compiled to WASM on Arbitrum Stylus. No oracle does the math for us.',
+  },
+  {
+    label: 'Fees',
+    lines: ['pending = shares × accFeePerShare', '          − rewardDebt'],
+    note: '1% of every trade flows to LPs through a MasterChef-style accumulator — O(1) distribution no matter how many providers.',
+  },
+]
 
-        <Section id="solution" title="The Solution" T={T}>
-          <p>
-            OmniCurve replaces N binary pools with a single pool governed by a{' '}
-            <strong className={`transition-colors duration-300 ${T.strong}`}>Gaussian probability distribution</strong>. One pool serves
-            all strike prices simultaneously.
-          </p>
-          <div className="not-italic my-6">
-            <GaussianChart mu={100} sigma={15} height={180} mini />
-          </div>
-          <p>
-            Liquidity providers deposit once into the single pool and earn fees from all strikes. The
-            distribution's mean (μ) represents the market's expected outcome, and sigma (σ) represents
-            uncertainty. Both are set by LPs.
-          </p>
-        </Section>
+/* ── 10 — resolution lifecycle ──────────────────────────────────────────── */
 
-        <Section id="pricing" title="How Pricing Works" T={T}>
-          <p>
-            The probability of any outcome is derived from the cumulative distribution function (CDF) of
-            the Gaussian distribution:
-          </p>
-          <div className={`not-italic my-4 p-4 border rounded font-mono text-sm transition-colors duration-300 ${T.codeBlock}`}>
-            <p className={`transition-colors duration-300 ${T.codeYes}`}>P_YES(x) = 1 − CDF(x, μ, σ)</p>
-            <p className={`mt-2 transition-colors duration-300 ${T.codeNo}`}>P_NO(x) = CDF(x, μ, σ)</p>
-          </div>
-          <p>
-            Drag the slider below to see how the strike price changes the probability split between YES and NO:
-          </p>
-          <div className="my-6">
-            <InteractivePricingChart T={T} />
-          </div>
-          <p>
-            The CDF is computed entirely on-chain using an Abramowitz & Stegun 5-coefficient error function
-            approximation, providing ~11 significant digits of precision with fixed-point (WAD, 1e18) arithmetic.
-          </p>
-        </Section>
+const LIFECYCLE = [
+  {
+    fn: 'set_final_price',
+    title: 'Record reality',
+    desc: 'The owner records the externally observed outcome. μ never settles anything — the real number does.',
+  },
+  {
+    fn: 'propose_resolution',
+    title: 'Open the window',
+    desc: 'A resolution proposal starts a 24-hour timelock — a dispute window anyone can inspect.',
+  },
+  {
+    fn: 'execute_resolution',
+    title: 'Finalize',
+    desc: 'After the timelock, the market resolves. Trading and liquidity operations stop.',
+  },
+  {
+    fn: 'claim_winnings',
+    title: 'Redeem',
+    desc: 'Winners pull $1 per token. release_losing_collateral frees the LP capital locked behind losing bets.',
+  },
+]
 
-        <Section id="traders" title="For Traders" T={T}>
-          <p>
-            To trade on a market, choose a <strong className={`transition-colors duration-300 ${T.strong}`}>strike price</strong> and a
-            direction: <span className={`transition-colors duration-300 ${T.yesText}`}>YES</span> (outcome exceeds strike) or{' '}
-            <span className={`transition-colors duration-300 ${T.noText}`}>NO</span> (outcome at or below strike).
-          </p>
-          <p>
-            You pay USDC proportional to the probability. If the market resolves in your direction, you
-            can redeem your tokens 1:1 for USDC. A 1% fee is deducted from each trade and distributed
-            to liquidity providers.
-          </p>
-          <p>
-            Settlement is currently manual — the market owner calls <code className={`transition-colors duration-300 ${T.code}`}>settleByPrice(finalPrice)</code>.
-            A two-phase resolution with a 24-hour timelock provides a dispute window.
-          </p>
-        </Section>
+export default function Docs() {
+  return (
+    <div className="overflow-x-clip">
+      <Hero />
+      <ScrollStory />
 
-        <Section id="lps" title="For Liquidity Providers" T={T}>
-          <p>
-            Deposit USDC into a market's AMM contract to receive non-transferable LP tokens representing
-            your share of the pool. Before the first trade, you can also set the distribution parameters
-            (μ, σ) to shift the market's expected outcome.
-          </p>
-          <p>
-            Fees from all trades are distributed to LPs using a{' '}
-            <strong className={`transition-colors duration-300 ${T.strong}`}>MasterChef-style accumulator</strong>: a global
-            acc_fee_per_share value increases with each trade, and each LP's pending fees = their shares
-            × acc_fee_per_share − their reward_debt.
-          </p>
-          <p>
-            LP tokens are non-transferable by design — this simplifies fee accounting and prevents
-            complex reward_debt migration logic.
-          </p>
-        </Section>
+      {/* ── 07 / TRY IT ── */}
+      <section className="max-w-4xl mx-auto px-4 sm:px-6 pt-28 pb-8">
+        <SectionHead
+          num="07 / Try it"
+          title="Run your own strike"
+          sub="The same CDF the contracts compute on-chain, live under your cursor. Drag the strike across Market #0's curve."
+        />
+        <Playground />
+      </section>
 
-        <Section id="architecture" title="Architecture" T={T}>
-          <p>
-            OmniCurve contracts are written in <strong className={`transition-colors duration-300 ${T.strong}`}>Rust</strong> and
-            compiled to <strong className={`transition-colors duration-300 ${T.strong}`}>WASM</strong> using{' '}
-            <strong className={`transition-colors duration-300 ${T.strong}`}>Arbitrum Stylus SDK v0.10.7</strong>.
-          </p>
-          <p>
-            Each market deploys three <strong className={`transition-colors duration-300 ${T.strong}`}>EIP-1167 minimal proxy</strong>{' '}
-            contracts via CREATE2: an AMM, a Router, and an LP Token. All proxies delegate to singleton
-            implementation contracts, sharing code while maintaining independent storage.
-          </p>
-          <div className={`not-italic my-4 p-4 border rounded font-mono text-xs space-y-1 transition-colors duration-300 ${T.codeBox}`}>
-            <p>OmniCurveFactory</p>
-            <p className="pl-4">├── AMM Implementation (singleton)</p>
-            <p className="pl-4">├── Router Implementation (singleton)</p>
-            <p className="pl-4">└── Market #N</p>
-            <p className="pl-8">├── AMM Proxy ──DELEGATECALL──▶ AMM Impl</p>
-            <p className="pl-8">└── Router Proxy ──DELEGATECALL──▶ Router Impl</p>
-          </div>
-        </Section>
-
-        <Section id="risks" title="Known Risks" T={T}>
-          <div className="not-italic space-y-3">
-            {[
-              {
-                level: 'High',
-                color: isDark ? '#FF4560' : '#dc2626',
-                title: 'claim_fees WAD bug',
-                desc: 'The claimFees function sends WAD amounts as USDC (missing /1e12 conversion). Trading fees may be permanently locked in the contract.',
-              },
-              {
-                level: 'High',
-                color: isDark ? '#FF4560' : '#dc2626',
-                title: 'Manual oracle',
-                desc: 'Resolution is fully manual — the market owner calls settleByPrice(). There is no on-chain price oracle or automation.',
-              },
-              {
-                level: 'Medium',
-                color: isDark ? '#C41230' : '#B91C1C',
-                title: 'No slippage protection',
-                desc: 'Trades have no maximum cost parameter. In theory, a price manipulation could result in overpayment.',
-              },
-              {
-                level: 'Medium',
-                color: isDark ? '#C41230' : '#B91C1C',
-                title: 'Non-upgradeable proxies',
-                desc: 'EIP-1167 proxies cannot be upgraded. If a bug is found, a new market must be created and liquidity manually migrated.',
-              },
-            ].map((r) => (
+      {/* ── 08 / THE MATH ── */}
+      <section className="max-w-4xl mx-auto px-4 sm:px-6 pt-28 pb-8">
+        <SectionHead
+          num="08 / The math"
+          title="Four formulas, no oracle"
+          sub="Everything the protocol believes and charges reduces to these."
+        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {MATH_PLATES.map((p, i) => (
+            <Reveal key={p.label} delay={i * 0.08}>
               <div
-                key={r.title}
-                className={`flex gap-3 p-4 border rounded transition-colors duration-300 ${T.riskCard}`}
+                className="border border-[color:var(--border-dim)] rounded p-5 h-full"
+                style={{ background: 'var(--bg-surface)' }}
               >
-                <span
-                  className="text-xs font-mono px-2 py-0.5 rounded self-start flex-shrink-0 mt-0.5"
-                  style={{ color: r.color, background: `${r.color}18`, border: `1px solid ${r.color}33` }}
-                >
-                  {r.level}
-                </span>
-                <div>
-                  <p className={`font-display font-600 text-sm mb-1 transition-colors duration-300 ${T.riskTitle}`}>{r.title}</p>
-                  <p className={`text-sm transition-colors duration-300 ${T.riskDesc}`}>{r.desc}</p>
+                <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-[#C41230] mb-3">
+                  {p.label}
+                </p>
+                <div className="font-mono text-[13px] leading-relaxed whitespace-pre text-[color:var(--text-primary)] overflow-x-auto">
+                  {p.lines.map((l) => (
+                    <p key={l}>{l}</p>
+                  ))}
                 </div>
+                <p className="font-serif text-sm leading-relaxed mt-4 text-[color:var(--text-muted)]">
+                  {p.note}
+                </p>
               </div>
-            ))}
+            </Reveal>
+          ))}
+        </div>
+      </section>
+
+      {/* ── 09 / TWO ROLES ── */}
+      <section className="max-w-4xl mx-auto px-4 sm:px-6 pt-28 pb-8">
+        <SectionHead
+          num="09 / Two roles"
+          title="Bettors steer. LPs underwrite."
+          sub="The separation is the security model: only capital at risk on a position can move the curve."
+        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Reveal>
+            <div
+              className="border rounded p-6 h-full border-[rgba(34,211,163,0.3)]"
+              style={{ background: 'var(--bg-surface)' }}
+            >
+              <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-[color:var(--accent-yes)] mb-4">
+                Traders
+              </p>
+              <ol className="space-y-3.5">
+                {[
+                  'Pick any strike and a side — YES (final ≥ x) or NO (final < x).',
+                  'Stake USDC. You pay the probability: cheap when the curve disagrees with you.',
+                  'Your stake folds into the curve — your conviction moves μ and σ.',
+                  'If reality lands your side of the strike, redeem $1.00 per token.',
+                ].map((s, i) => (
+                  <li key={s} className="flex gap-3">
+                    <span className="font-mono text-xs text-[color:var(--accent-yes)] mt-0.5 flex-shrink-0">
+                      0{i + 1}
+                    </span>
+                    <span className="font-serif text-sm leading-relaxed text-[color:var(--text-muted)]">
+                      {s}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </Reveal>
+          <Reveal delay={0.1}>
+            <div
+              className="border rounded p-6 h-full border-[rgba(196,18,48,0.35)]"
+              style={{ background: 'var(--bg-surface)' }}
+            >
+              <p className="font-mono text-[10px] tracking-[0.25em] uppercase text-[#C41230] mb-4">
+                Liquidity providers
+              </p>
+              <ol className="space-y-3.5">
+                {[
+                  'Deposit USDC into the single pool; receive non-transferable LP tokens.',
+                  'Pure collateral underwriting — deposits never shift μ or σ, by construction.',
+                  'Earn 1% of every trade across all strikes, pro-rata, claimable anytime.',
+                  'After resolution, collateral locked behind losing bets returns to the pool.',
+                ].map((s, i) => (
+                  <li key={s} className="flex gap-3">
+                    <span className="font-mono text-xs text-[#C41230] mt-0.5 flex-shrink-0">
+                      0{i + 1}
+                    </span>
+                    <span className="font-serif text-sm leading-relaxed text-[color:var(--text-muted)]">
+                      {s}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          </Reveal>
+        </div>
+      </section>
+
+      {/* ── 10 / RESOLUTION ── */}
+      <section className="max-w-5xl mx-auto px-4 sm:px-6 pt-28 pb-8">
+        <SectionHead
+          num="10 / Resolution"
+          title="Settling against reality"
+          sub="Pull-based claiming, with a timelock between proposal and finality."
+        />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {LIFECYCLE.map((s, i) => (
+            <Reveal key={s.fn} delay={i * 0.1}>
+              <div
+                className="border border-[color:var(--border-dim)] rounded p-5 h-full relative"
+                style={{ background: 'var(--bg-surface)' }}
+              >
+                <span className="font-mono text-[10px] text-[color:var(--text-subtle)]">
+                  STEP 0{i + 1}
+                </span>
+                <p className="font-mono text-[13px] text-[#C41230] mt-2 break-all">{s.fn}()</p>
+                <p className="font-display font-600 text-sm mt-2 text-[color:var(--text-primary)]">
+                  {s.title}
+                </p>
+                <p className="font-serif text-[13px] leading-relaxed mt-2 text-[color:var(--text-muted)]">
+                  {s.desc}
+                </p>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </section>
+
+      {/* ── 11 / ARCHITECTURE ── */}
+      <section className="max-w-4xl mx-auto px-4 sm:px-6 pt-28 pb-8">
+        <SectionHead
+          num="11 / Architecture"
+          title="Rust on Stylus, cloned per market"
+          sub="The Gaussian engine would be prohibitively expensive in Solidity. Stylus runs it as WASM for near-zero gas."
+        />
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-stretch">
+          <Reveal className="md:col-span-2">
+            <div className="h-full flex flex-col justify-center space-y-4">
+              <p className="font-serif text-[15px] leading-relaxed text-[color:var(--text-muted)]">
+                Contracts are written in <strong className="text-[color:var(--text-primary)]">Rust</strong>,
+                compiled to <strong className="text-[color:var(--text-primary)]">WASM</strong> with the
+                Arbitrum Stylus SDK. Implementations deploy once as singletons; the Factory clones an
+                AMM, a Router, and an LP Token per market via{' '}
+                <strong className="text-[color:var(--text-primary)]">EIP-1167 minimal proxies</strong> and
+                CREATE2 — shared code, independent storage.
+              </p>
+              <p className="font-serif text-[15px] leading-relaxed text-[color:var(--text-muted)]">
+                The Router prices and executes trades, the AMM holds collateral and recomputes the
+                curve, and the LP Token receipts the underwriters.
+              </p>
+            </div>
+          </Reveal>
+          <Reveal delay={0.12} className="md:col-span-3">
+            <div
+              className="border border-[color:var(--border-dim)] rounded p-5 font-mono text-xs leading-loose text-[color:var(--text-muted)] overflow-x-auto"
+              style={{ background: 'var(--bg-surface)' }}
+            >
+              <p className="text-[#C41230]">OmniCurveFactory.create_market()</p>
+              <p className="pl-3">├─ AMM Proxy ──DELEGATECALL──▶ AMM Impl</p>
+              <p className="pl-3">├─ Router Proxy ──DELEGATECALL──▶ Router Impl</p>
+              <p className="pl-3">├─ LP Token Proxy ──DELEGATECALL──▶ LP Impl</p>
+              <p className="pl-3">├─ wires AMM ↔ Router ↔ LP Token ↔ USDC</p>
+              <p className="pl-3">└─ ownership → market creator (two-step)</p>
+            </div>
+          </Reveal>
+        </div>
+        <Reveal delay={0.2}>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 mt-8 font-mono text-[10px] tracking-[0.15em] uppercase text-[color:var(--text-subtle)]">
+            <span>Arbitrum Stylus</span>
+            <span className="text-[#C41230]">·</span>
+            <span>Rust → WASM</span>
+            <span className="text-[#C41230]">·</span>
+            <span>EIP-1167 + CREATE2</span>
+            <span className="text-[#C41230]">·</span>
+            <span>WAD fixed-point</span>
+            <span className="text-[#C41230]">·</span>
+            <span>MasterChef fees</span>
+            <span className="text-[#C41230]">·</span>
+            <span>Non-custodial</span>
           </div>
-        </Section>
-      </main>
-    </div>
+        </Reveal>
+      </section>
+
+      {/* ── closing CTA ── */}
+      <section className="max-w-4xl mx-auto px-4 sm:px-6 pt-28 pb-16">
+        <Reveal>
+          <div
+            className="border border-[color:var(--border-dim)] rounded px-6 py-14 sm:py-16 text-center relative overflow-hidden"
+            style={{ background: 'var(--bg-surface)' }}
+          >
+            <svg
+              viewBox="0 0 720 220"
+              className="absolute inset-x-0 bottom-0 w-full opacity-[0.15] pointer-events-none"
+              preserveAspectRatio="xMidYMax slice"
+              fill="none"
+            >
+              <path d={HERO_CURVE} stroke="#C41230" strokeWidth={2} />
+            </svg>
+            <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-[#C41230] mb-4 relative">
+              End of transmission
+            </p>
+            <h2 className="font-display font-800 text-3xl sm:text-4xl tracking-tight text-[color:var(--text-primary)] relative">
+              Ready to price the future?
+            </h2>
+            <p className="font-serif italic text-base mt-4 max-w-md mx-auto text-[color:var(--text-muted)] relative">
+              Market #0 is live on Arbitrum Sepolia: “What will ETH price be by the end of 2026?”
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center mt-8 relative">
+              <Link
+                to="/markets"
+                className="inline-flex items-center justify-center px-8 py-3.5 bg-[#c8102e] text-white font-display font-700 text-sm tracking-wider rounded hover:bg-[#a5001b] active:scale-[0.98] transition-all"
+                style={{ boxShadow: '0 0 28px rgba(200,16,46,0.35)' }}
+              >
+                Enter Markets →
+              </Link>
+              <button
+                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                className="inline-flex items-center justify-center px-8 py-3.5 border border-[color:var(--border)] font-display font-600 text-sm tracking-wider rounded text-[color:var(--text-muted)] hover:text-[color:var(--text-primary)] hover:border-[#C41230] transition-all"
+              >
+                Replay the story ↑
+              </button>
+            </div>
+          </div>
+        </Reveal>
+      </section>
     </div>
   )
 }
