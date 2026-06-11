@@ -36,13 +36,13 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
       transition={{ duration: 0.2 }}
       className={`flex items-start gap-3 p-4 rounded border backdrop-blur-sm max-w-sm shadow-2xl cursor-pointer`}
       style={{
-        background: '#0d1020',
+        background: '#111111',
         borderColor:
           toast.type === 'success'
             ? 'rgba(34,211,163,0.3)'
             : toast.type === 'error'
               ? 'rgba(255,69,96,0.3)'
-              : 'rgba(255,184,0,0.3)',
+              : 'rgba(196,18,48,0.3)',
       }}
       onClick={() => onDismiss(toast.id)}
     >
@@ -67,17 +67,17 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
             fill="none"
             className="animate-spin"
           >
-            <circle cx="8" cy="8" r="6" stroke="rgba(255,184,0,0.25)" strokeWidth="2" />
+            <circle cx="8" cy="8" r="6" stroke="rgba(196,18,48,0.25)" strokeWidth="2" />
             <path
               d="M8 2a6 6 0 016 6"
-              stroke="#FFB800"
+              stroke="#C41230"
               strokeWidth="2"
               strokeLinecap="round"
             />
           </svg>
         )}
       </div>
-      <p className="text-sm text-[#E2DDD4] leading-relaxed font-mono">{toast.message}</p>
+      <p className="text-sm text-[#F2F2F2] leading-relaxed font-mono">{toast.message}</p>
     </motion.div>
   )
 }

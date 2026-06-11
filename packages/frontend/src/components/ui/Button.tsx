@@ -35,13 +35,13 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           'inline-flex items-center justify-center gap-2 font-display font-600 tracking-wide transition-all duration-150 cursor-pointer select-none',
           'disabled:opacity-40 disabled:cursor-not-allowed',
           {
-            'bg-[#FFB800] text-[#060810] hover:bg-[#ffc933] active:scale-[0.98]':
+            'bg-[#C41230] text-white hover:bg-[#D41535] active:scale-[0.98]':
               variant === 'primary',
-            'border border-[#FFB800] text-[#FFB800] hover:bg-[rgba(255,184,0,0.08)] active:scale-[0.98]':
+            'border border-[#C41230] text-[#C41230] hover:bg-[rgba(196,18,48,0.08)] active:scale-[0.98]':
               variant === 'ghost',
             'border border-[#FF4560] text-[#FF4560] hover:bg-[rgba(255,69,96,0.08)] active:scale-[0.98]':
               variant === 'danger',
-            'border border-[rgba(255,255,255,0.08)] text-[rgba(226,221,212,0.45)] hover:border-[rgba(255,255,255,0.15)] hover:text-[#E2DDD4]':
+            'border border-[var(--border)] text-[var(--text-muted)] hover:border-[var(--border-dim)] hover:text-[var(--text-primary)]':
               variant === 'muted',
           },
           {

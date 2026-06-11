@@ -48,7 +48,7 @@ export function StrikeSlider({ value, min, max, mu, sigma, onChange }: StrikeSli
         step={(max - min) / 500}
         onChange={onChange}
       />
-      <div className="flex justify-between text-[10px] font-mono text-[rgba(226,221,212,0.25)]">
+      <div className="flex justify-between text-[10px] font-mono text-[rgba(242,242,242,0.25)]">
         <span>{min.toLocaleString()}</span>
         <span>μ = {mu.toLocaleString()}</span>
         <span>{max.toLocaleString()}</span>

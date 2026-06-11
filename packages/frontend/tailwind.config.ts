@@ -5,16 +5,16 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        'bg-base': '#060810',
+        'bg-base': '#0A0A0A',
         'bg-surface': 'rgba(255,255,255,0.04)',
         'bg-surface-2': 'rgba(255,255,255,0.07)',
-        border: 'rgba(255,255,255,0.08)',
-        'text-primary': '#E2DDD4',
-        'text-muted': 'rgba(226,221,212,0.45)',
+        border: 'rgba(255,255,255,0.10)',
+        'text-primary': '#F2F2F2',
+        'text-muted': 'rgba(242,242,242,0.45)',
         'accent-yes': '#22D3A3',
         'accent-no': '#FF4560',
-        'accent-data': '#FFB800',
-        'accent-data-dim': 'rgba(255,184,0,0.15)',
+        'accent-data': '#C41230',
+        'accent-data-dim': 'rgba(196,18,48,0.15)',
         'grid-line': 'rgba(255,255,255,0.04)',
       },
       fontFamily: {

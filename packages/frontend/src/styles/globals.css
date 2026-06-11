@@ -2,18 +2,61 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --bg-base: #060810;
-  --bg-surface: rgba(255, 255, 255, 0.04);
-  --bg-surface-2: rgba(255, 255, 255, 0.07);
-  --border: rgba(255, 255, 255, 0.08);
-  --text-primary: #e2ddd4;
-  --text-muted: rgba(226, 221, 212, 0.45);
-  --accent-yes: #22d3a3;
-  --accent-no: #ff4560;
-  --accent-data: #ffb800;
-  --accent-data-dim: rgba(255, 184, 0, 0.15);
-  --grid-line: rgba(255, 255, 255, 0.04);
+/* ── Dark theme (default) — Ruan palette: near-black + crimson ──────────── */
+:root,
+html[data-theme="dark"] {
+  --bg-base:        #0A0A0A;
+  --bg-surface:     #1C1C1C;
+  --bg-surface-2:   #282828;
+  --border:         rgba(255, 255, 255, 0.20);
+  --border-dim:     rgba(255, 255, 255, 0.12);
+  --text-primary:   #F2F2F2;
+  --text-muted:     rgba(242, 242, 242, 0.70);
+  --text-subtle:    rgba(242, 242, 242, 0.50);
+  --accent-yes:     #22D3A3;
+  --accent-no:      #FF4560;
+  --accent-data:    #C41230;
+  --accent-data-dim: rgba(196, 18, 48, 0.20);
+  --grid-line:      rgba(255, 255, 255, 0.04);
+  --nav-bg:         rgba(15, 15, 15, 0.95);
+  --nav-border:     rgba(255, 255, 255, 0.12);
+  --logo-curve:     #C41230;
+  --nav-link-active: #C41230;
+  --surface-pulse:  rgba(255, 255, 255, 0.05);
+  --rk-theme-accent: #C41230;
+  --rk-theme-accent-fg: #ffffff;
+  /* chart */
+  --chart-curve:      #F2F2F2;
+  --chart-axis:       rgba(255, 255, 255, 0.18);
+  --chart-tick-text:  rgba(242, 242, 242, 0.65);
+  --chart-glow:       1;
+}
+
+/* ── Light theme — warm cream + crimson + near-black ────────────────────── */
+html[data-theme="light"] {
+  --bg-base:        #F3EFE8;
+  --bg-surface:     #FFFFFF;
+  --bg-surface-2:   #F5F5F5;
+  --border:         rgba(0, 0, 0, 0.22);
+  --border-dim:     rgba(0, 0, 0, 0.14);
+  --text-primary:   #0F0F0F;
+  --text-muted:     rgba(15, 15, 15, 0.72);
+  --text-subtle:    rgba(15, 15, 15, 0.55);
+  --accent-yes:     #047857;
+  --accent-no:      #B91C1C;
+  --accent-data:    #C41230;
+  --accent-data-dim: rgba(196, 18, 48, 0.15);
+  --grid-line:      rgba(0, 0, 0, 0.07);
+  --nav-bg:         rgba(255, 255, 255, 0.97);
+  --nav-border:     rgba(0, 0, 0, 0.18);
+  --logo-curve:     #C41230;
+  --nav-link-active: #C41230;
+  --surface-pulse:  rgba(0, 0, 0, 0.04);
+  /* chart */
+  --chart-curve:      #1C1917;
+  --chart-axis:       rgba(0, 0, 0, 0.30);
+  --chart-tick-text:  rgba(15, 15, 15, 0.70);
+  --chart-glow:       0;
 }
 
 *,
@@ -38,6 +81,7 @@ body {
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
 /* Mono for all numbers */
@@ -48,38 +92,73 @@ input[type='number'],
   font-family: 'JetBrains Mono', monospace;
 }
 
-/* RainbowKit overrides */
-[data-rk] {
-  --rk-colors-accentColor: #ffb800 !important;
-  --rk-colors-accentColorForeground: #060810 !important;
-  --rk-colors-actionButtonBorder: rgba(255, 255, 255, 0.08) !important;
-  --rk-colors-actionButtonBorderMobile: rgba(255, 255, 255, 0.08) !important;
+/* RainbowKit overrides — dark */
+html[data-theme="dark"] [data-rk],
+:root [data-rk] {
+  --rk-colors-accentColor: #C41230 !important;
+  --rk-colors-accentColorForeground: #ffffff !important;
+  --rk-colors-actionButtonBorder: rgba(255, 255, 255, 0.10) !important;
+  --rk-colors-actionButtonBorderMobile: rgba(255, 255, 255, 0.10) !important;
   --rk-colors-actionButtonSecondaryBackground: rgba(255, 255, 255, 0.04) !important;
-  --rk-colors-closeButton: rgba(226, 221, 212, 0.45) !important;
+  --rk-colors-closeButton: rgba(242, 242, 242, 0.45) !important;
   --rk-colors-closeButtonBackground: rgba(255, 255, 255, 0.07) !important;
   --rk-colors-connectButtonBackground: rgba(255, 255, 255, 0.04) !important;
-  --rk-colors-connectButtonBackgroundError: #ff4560 !important;
+  --rk-colors-connectButtonBackgroundError: #FF4560 !important;
   --rk-colors-connectButtonInnerBackground: rgba(255, 255, 255, 0.07) !important;
-  --rk-colors-connectButtonText: #e2ddd4 !important;
-  --rk-colors-connectButtonTextError: #e2ddd4 !important;
-  --rk-colors-connectionIndicator: #22d3a3 !important;
-  --rk-colors-downloadBottomCardBackground: #060810 !important;
+  --rk-colors-connectButtonText: #F2F2F2 !important;
+  --rk-colors-connectButtonTextError: #F2F2F2 !important;
+  --rk-colors-connectionIndicator: #22D3A3 !important;
+  --rk-colors-downloadBottomCardBackground: #0A0A0A !important;
   --rk-colors-downloadTopCardBackground: rgba(255, 255, 255, 0.04) !important;
-  --rk-colors-error: #ff4560 !important;
-  --rk-colors-generalBorder: rgba(255, 255, 255, 0.08) !important;
-  --rk-colors-generalBorderDim: rgba(255, 255, 255, 0.04) !important;
+  --rk-colors-error: #FF4560 !important;
+  --rk-colors-generalBorder: rgba(255, 255, 255, 0.10) !important;
+  --rk-colors-generalBorderDim: rgba(255, 255, 255, 0.06) !important;
   --rk-colors-menuItemBackground: rgba(255, 255, 255, 0.04) !important;
-  --rk-colors-modalBackdrop: rgba(6, 8, 16, 0.85) !important;
-  --rk-colors-modalBackground: #0d1020 !important;
-  --rk-colors-modalBorder: rgba(255, 255, 255, 0.08) !important;
-  --rk-colors-modalText: #e2ddd4 !important;
-  --rk-colors-modalTextDim: rgba(226, 221, 212, 0.45) !important;
-  --rk-colors-modalTextSecondary: rgba(226, 221, 212, 0.45) !important;
+  --rk-colors-modalBackdrop: rgba(10, 10, 10, 0.88) !important;
+  --rk-colors-modalBackground: #111111 !important;
+  --rk-colors-modalBorder: rgba(255, 255, 255, 0.10) !important;
+  --rk-colors-modalText: #F2F2F2 !important;
+  --rk-colors-modalTextDim: rgba(242, 242, 242, 0.45) !important;
+  --rk-colors-modalTextSecondary: rgba(242, 242, 242, 0.45) !important;
   --rk-colors-profileAction: rgba(255, 255, 255, 0.04) !important;
   --rk-colors-profileActionHover: rgba(255, 255, 255, 0.07) !important;
   --rk-colors-profileForeground: rgba(255, 255, 255, 0.04) !important;
-  --rk-colors-selectedOptionBorder: #ffb800 !important;
-  --rk-colors-standby: #ffb800 !important;
+  --rk-colors-selectedOptionBorder: #C41230 !important;
+  --rk-colors-standby: #C41230 !important;
+}
+
+/* RainbowKit overrides — light */
+html[data-theme="light"] [data-rk] {
+  --rk-colors-accentColor: #C41230 !important;
+  --rk-colors-accentColorForeground: #ffffff !important;
+  --rk-colors-actionButtonBorder: rgba(0, 0, 0, 0.10) !important;
+  --rk-colors-actionButtonBorderMobile: rgba(0, 0, 0, 0.10) !important;
+  --rk-colors-actionButtonSecondaryBackground: rgba(0, 0, 0, 0.03) !important;
+  --rk-colors-closeButton: rgba(17, 17, 17, 0.5) !important;
+  --rk-colors-closeButtonBackground: rgba(0, 0, 0, 0.05) !important;
+  --rk-colors-connectButtonBackground: rgba(0, 0, 0, 0.03) !important;
+  --rk-colors-connectButtonBackgroundError: #dc2626 !important;
+  --rk-colors-connectButtonInnerBackground: rgba(0, 0, 0, 0.05) !important;
+  --rk-colors-connectButtonText: #111111 !important;
+  --rk-colors-connectButtonTextError: #111111 !important;
+  --rk-colors-connectionIndicator: #059669 !important;
+  --rk-colors-downloadBottomCardBackground: #FFFFFF !important;
+  --rk-colors-downloadTopCardBackground: rgba(0, 0, 0, 0.03) !important;
+  --rk-colors-error: #dc2626 !important;
+  --rk-colors-generalBorder: rgba(0, 0, 0, 0.10) !important;
+  --rk-colors-generalBorderDim: rgba(0, 0, 0, 0.06) !important;
+  --rk-colors-menuItemBackground: rgba(0, 0, 0, 0.03) !important;
+  --rk-colors-modalBackdrop: rgba(255, 255, 255, 0.88) !important;
+  --rk-colors-modalBackground: #F5F5F5 !important;
+  --rk-colors-modalBorder: rgba(0, 0, 0, 0.10) !important;
+  --rk-colors-modalText: #111111 !important;
+  --rk-colors-modalTextDim: rgba(17, 17, 17, 0.5) !important;
+  --rk-colors-modalTextSecondary: rgba(17, 17, 17, 0.5) !important;
+  --rk-colors-profileAction: rgba(0, 0, 0, 0.03) !important;
+  --rk-colors-profileActionHover: rgba(0, 0, 0, 0.05) !important;
+  --rk-colors-profileForeground: rgba(0, 0, 0, 0.03) !important;
+  --rk-colors-selectedOptionBorder: #C41230 !important;
+  --rk-colors-standby: #C41230 !important;
 }
 
 /* Scrollbar */
@@ -91,11 +170,11 @@ input[type='number'],
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(128, 128, 128, 0.2);
   border-radius: 2px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 184, 0, 0.4);
+  background: rgba(196, 18, 48, 0.4);
 }
 
 /* Focus ring */
@@ -106,6 +185,18 @@ input[type='number'],
 
 /* Selection */
 ::selection {
-  background: rgba(255, 184, 0, 0.2);
+  background: var(--accent-data-dim);
   color: var(--text-primary);
+}
+
+/* Landing page: transparent body so ShaderBackground canvas shows through */
+body.shader-bg {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+/* Non-landing pages: transparent body so LiquidChromeBackground shows through */
+body.chrome-bg {
+  background-color: transparent !important;
+  background-image: none !important;
 }

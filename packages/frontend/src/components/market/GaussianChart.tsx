@@ -2,6 +2,18 @@ import { useEffect, useRef, useState } from 'react'
 import * as d3 from 'd3'
 import { pYes as calcPYes } from '@/lib/math'
 
+function readChartTokens() {
+  const s = getComputedStyle(document.documentElement)
+  const isLight = document.documentElement.getAttribute('data-theme') === 'light'
+  return {
+    curve:    s.getPropertyValue('--chart-curve').trim()     || '#F2F2F2',
+    axis:     s.getPropertyValue('--chart-axis').trim()      || 'rgba(255,255,255,0.12)',
+    tickText: s.getPropertyValue('--chart-tick-text').trim() || 'rgba(242,242,242,0.45)',
+    glow:     s.getPropertyValue('--chart-glow').trim()      === '1',
+    isLight,
+  }
+}
+
 interface GaussianChartProps {
   mu: number
   sigma: number
@@ -49,6 +61,16 @@ export function GaussianChart({
   // A fixed domain is what makes a moving mean visibly translate the bell.
   const domainRef = useRef<[number, number] | null>(null)
   const [width, setWidth] = useState(600)
+  const [theme, setTheme] = useState(() => document.documentElement.getAttribute('data-theme') ?? 'dark')
+
+  // Re-render chart when theme toggles
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setTheme(document.documentElement.getAttribute('data-theme') ?? 'dark')
+    })
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+    return () => observer.disconnect()
+  }, [])
 
   // ResizeObserver
   useEffect(() => {
@@ -64,6 +86,7 @@ export function GaussianChart({
   useEffect(() => {
     if (!svgRef.current || sigma <= 0) return
 
+    const tokens = readChartTokens()
     const innerW = width - MARGIN.left - MARGIN.right
     const innerH = height - MARGIN.top - MARGIN.bottom
 
@@ -163,15 +186,19 @@ export function GaussianChart({
         .attr('stroke', 'none')
     }
 
-    // Curve line with glow
-    g.append('path')
+    // Curve line with optional glow (dark theme only)
+    const curveLine = g.append('path')
       .datum(points)
       .attr('d', lineGen as unknown as string)
       .attr('fill', 'none')
-      .attr('stroke', '#E2DDD4')
+      .attr('stroke', tokens.curve)
       .attr('stroke-width', mini ? 1.5 : 2)
-      .attr('filter', 'url(#glow)')
       .attr('opacity', 0.9)
+    if (tokens.glow) {
+      curveLine.attr('filter', 'url(#glow)')
+    } else if (tokens.isLight) {
+      curveLine.style('filter', 'drop-shadow(0 0 5px rgba(196,18,48,0.55))')
+    }
 
     // μ dashed line
     const muPos = xScale(mu)
@@ -180,7 +207,7 @@ export function GaussianChart({
       .attr('x2', muPos)
       .attr('y1', 0)
       .attr('y2', innerH)
-      .attr('stroke', 'rgba(255,184,0,0.4)')
+      .attr('stroke', 'rgba(196,18,48,0.4)')
       .attr('stroke-width', 1)
       .attr('stroke-dasharray', '4 3')
 
@@ -188,7 +215,7 @@ export function GaussianChart({
       g.append('text')
         .attr('x', muPos + 4)
         .attr('y', 10)
-        .attr('fill', '#FFB800')
+        .attr('fill', '#C41230')
         .attr('font-size', 11)
         .attr('font-family', 'JetBrains Mono, monospace')
         .text('μ')
@@ -202,7 +229,7 @@ export function GaussianChart({
         .attr('x2', sPos)
         .attr('y1', 0)
         .attr('y2', innerH)
-        .attr('stroke', '#FFB800')
+        .attr('stroke', '#C41230')
         .attr('stroke-width', 1.5)
         .attr('opacity', 0.8)
 
@@ -268,14 +295,14 @@ export function GaussianChart({
       .attr('transform', `translate(0, ${innerH})`)
       .call(xAxis)
       .call((g) => {
-        g.select('.domain').attr('stroke', 'rgba(255,255,255,0.08)')
-        g.selectAll('.tick line').attr('stroke', 'rgba(255,255,255,0.08)').attr('y2', 4)
+        g.select('.domain').attr('stroke', tokens.axis)
+        g.selectAll('.tick line').attr('stroke', tokens.axis).attr('y2', 4)
         g.selectAll('.tick text')
-          .attr('fill', 'rgba(226,221,212,0.4)')
+          .attr('fill', tokens.tickText)
           .attr('font-size', mini ? 9 : 10)
           .attr('font-family', 'JetBrains Mono, monospace')
       })
-  }, [mu, sigma, strikeX, width, height, direction, mini, liquidity, spotX, spotLabel])
+  }, [mu, sigma, strikeX, width, height, direction, mini, liquidity, spotX, spotLabel, theme])
 
   if (sigma <= 0) {
     return (
@@ -285,7 +312,7 @@ export function GaussianChart({
         style={{ height }}
       >
         {!mini && (
-          <p className="font-mono text-xs text-[rgba(226,221,212,0.25)]">
+          <p className="font-mono text-xs" style={{ color: 'var(--text-subtle)' }}>
             Curve not yet configured — add liquidity to set μ and σ
           </p>
         )}

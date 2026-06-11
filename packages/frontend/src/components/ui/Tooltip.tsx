@@ -40,7 +40,7 @@ export function Tooltip({ content, children }: TooltipProps) {
               className="fixed z-[9998] pointer-events-none"
               style={{ left: pos.x, top: pos.y, transform: 'translate(-50%, -100%)' }}
             >
-              <div className="bg-[#1a1f35] border border-[rgba(255,255,255,0.1)] rounded px-2.5 py-1.5 text-xs font-mono text-[#E2DDD4] whitespace-nowrap shadow-xl">
+              <div className="bg-[#1a1f35] border border-[rgba(255,255,255,0.1)] rounded px-2.5 py-1.5 text-xs font-mono text-[#F2F2F2] whitespace-nowrap shadow-xl">
                 {content}
               </div>
             </motion.div>

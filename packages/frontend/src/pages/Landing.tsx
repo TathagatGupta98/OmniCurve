@@ -1,220 +1,146 @@
-import { useRef, useEffect } from 'react'
+import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import * as d3 from 'd3'
 import { useMarkets } from '@/hooks/useMarkets'
-import { gaussianPDF } from '@/lib/math'
 import { ConnectButton } from '@/components/wallet/ConnectButton'
+import ShaderBackground from '@/components/ui/ShaderBackground'
 
-// Animated hero Gaussian SVG
-function HeroCurve() {
-  const svgRef = useRef<SVGSVGElement>(null)
-  const sigmaRef = useRef(1)
-  const frameRef = useRef<number>(0)
-
-  useEffect(() => {
-    const svg = d3.select(svgRef.current!)
-    const W = 800, H = 200
-    const mu = 0
-    const margin = { top: 16, right: 40, bottom: 16, left: 40 }
-    const iW = W - margin.left - margin.right
-    const iH = H - margin.top - margin.bottom
-
-    svg.attr('viewBox', `0 0 ${W} ${H}`)
-
-    const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`)
-
-    const xScale = d3.scaleLinear().domain([-4, 4]).range([0, iW])
-
-    const lineGen = d3.line<{ x: number; y: number }>()
-      .x(d => xScale(d.x))
-      .y(d => d.y)
-      .curve(d3.curveBasis)
-
-    const areaGen = d3.area<{ x: number; y: number }>()
-      .x(d => xScale(d.x))
-      .y0(iH)
-      .y1(d => d.y)
-      .curve(d3.curveBasis)
-
-    const defs = svg.append('defs')
-    const grad = defs.append('linearGradient').attr('id', 'hero-grad').attr('x1','0%').attr('y1','0%').attr('x2','0%').attr('y2','100%')
-    grad.append('stop').attr('offset','0%').attr('stop-color','#22D3A3').attr('stop-opacity', 0.15)
-    grad.append('stop').attr('offset','100%').attr('stop-color','#22D3A3').attr('stop-opacity', 0)
-
-    const filter = defs.append('filter').attr('id', 'hero-glow')
-    filter.append('feGaussianBlur').attr('stdDeviation', 6).attr('result', 'blur')
-    const merge = filter.append('feMerge')
-    merge.append('feMergeNode').attr('in', 'blur')
-    merge.append('feMergeNode').attr('in', 'SourceGraphic')
-
-    const areaPath = g.append('path').attr('fill', 'url(#hero-grad)')
-    const linePath = g.append('path')
-      .attr('fill', 'none')
-      .attr('stroke', '#22D3A3')
-      .attr('stroke-width', 2)
-      .attr('filter', 'url(#hero-glow)')
-
-    // μ line
-    g.append('line')
-      .attr('x1', xScale(0)).attr('x2', xScale(0))
-      .attr('y1', 0).attr('y2', iH)
-      .attr('stroke', 'rgba(255,184,0,0.35)')
-      .attr('stroke-dasharray', '4 3')
-      .attr('stroke-width', 1)
-
-    let t = 0
-    const animate = () => {
-      t += 0.008
-      const sigma = 1 + 0.2 * Math.sin(t)
-      sigmaRef.current = sigma
-      const pts = d3.range(300).map(i => {
-        const x = -4 + (8 * i) / 299
-        const pdf = gaussianPDF(x, mu, sigma)
-        const yMax = gaussianPDF(0, 0, 1) * 1.5
-        return { x, y: iH - (pdf / yMax) * iH }
-      })
-      areaPath.attr('d', areaGen(pts) ?? '')
-      linePath.attr('d', lineGen(pts) ?? '')
-      frameRef.current = requestAnimationFrame(animate)
-    }
-
-    animate()
-    return () => {
-      if (frameRef.current) cancelAnimationFrame(frameRef.current)
-      svg.selectAll('*').remove()
-    }
-  }, [])
-
-  return <svg ref={svgRef} className="w-full" style={{ height: 200 }} />
-}
-
-const HEADLINE = 'Every Outcome, One Curve'.split('')
+const fadeUp = (delay: number, duration = 0.7) => ({
+  initial: { opacity: 0, y: 28 },
+  animate: { opacity: 1, y: 0 },
+  transition: { delay, duration, ease: [0.22, 1, 0.36, 1] },
+})
 
 export default function Landing() {
   const { data: markets } = useMarkets()
 
   const totalLiquidity = markets?.reduce((s, m) => s + m.totalLiquidity, 0) ?? 0
-  const resolvedCount = markets?.filter(m => m.isResolved).length ?? 0
+  const resolvedCount  = markets?.filter(m => m.isResolved).length ?? 0
+
+  useEffect(() => {
+    document.body.classList.add('shader-bg')
+    return () => document.body.classList.remove('shader-bg')
+  }, [])
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Nav strip */}
-      <header className="fixed top-0 left-0 right-0 z-40 px-6 h-14 flex items-center justify-between border-b border-[rgba(255,255,255,0.05)] bg-[rgba(6,8,16,0.8)] backdrop-blur-md">
-        <span className="font-display font-800 text-[#E2DDD4] text-sm tracking-wider">
-          OMNI<span className="text-[#FFB800]">CURVE</span>
+      <ShaderBackground darkMode={true} />
+
+      {/* ── Nav ── */}
+      <motion.header
+        className="fixed top-0 left-0 right-0 z-40 px-6 h-14 flex items-center justify-between border-b backdrop-blur-md bg-[rgba(15,15,15,0.95)] border-[rgba(255,255,255,0.14)]"
+        {...fadeUp(3.5, 1)}
+      >
+        <span className="font-display font-800 text-sm tracking-wider text-[#F2F2F2]">
+          OMNI<span className="text-[#C41230]">CURVE</span>
         </span>
-        <div className="flex items-center gap-4">
-          <Link to="/docs" className="text-xs font-display tracking-widest uppercase text-[rgba(226,221,212,0.45)] hover:text-[#E2DDD4] transition-colors">Docs</Link>
+
+        <div className="flex items-center gap-3">
+          <Link
+            to="/docs"
+            className="text-xs font-display tracking-widest uppercase text-[rgba(242,242,242,0.65)] hover:text-[#F2F2F2] transition-colors duration-200"
+          >
+            Docs
+          </Link>
+
           <ConnectButton />
         </div>
-      </header>
+      </motion.header>
 
-      {/* Hero */}
-      <main className="flex-1 flex flex-col items-center justify-center pt-14 px-6">
-        <div className="max-w-4xl w-full text-center space-y-8 py-24">
-          {/* Animated curve */}
-          <motion.div
-            className="w-full max-w-2xl mx-auto opacity-80"
-            initial={{ opacity: 0, scaleX: 0.9 }}
-            animate={{ opacity: 0.8, scaleX: 1 }}
-            transition={{ duration: 1.2, ease: 'easeOut' }}
+      {/* ── Hero ── */}
+      <main className="flex-1 flex flex-col items-center justify-center pt-14 px-6 relative">
+
+        {/* Scrim — keeps text crisp over the shader animation */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: 'radial-gradient(ellipse 80% 60% at 50% 50%, rgba(10,3,3,0.75) 0%, rgba(10,3,3,0.28) 60%, transparent 100%)',
+          }}
+        />
+
+        <div className="w-full text-center relative z-10 flex flex-col items-center gap-8 py-24">
+
+          <motion.h1
+            className="font-display font-800 tracking-tight leading-none whitespace-nowrap text-white"
+            style={{
+              fontSize: 'clamp(2.4rem, 6.5vw, 5.5rem)',
+              textShadow: '0 2px 32px rgba(8,2,2,0.98), 0 0 64px rgba(8,2,2,0.85)',
+            }}
+            {...fadeUp(0.5, 1)}
           >
-            <HeroCurve />
-          </motion.div>
+            Every Outcome, One Curve
+          </motion.h1>
 
-          {/* Headline */}
-          <div className="overflow-hidden">
-            <h1 className="font-display font-800 text-5xl sm:text-7xl text-[#E2DDD4] tracking-tight leading-none">
-              {HEADLINE.map((char, i) => (
-                <motion.span
-                  key={i}
-                  className="inline-block"
-                  initial={{ y: 60, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{
-                    delay: 0.4 + i * 0.025,
-                    duration: 0.5,
-                    ease: [0.22, 1, 0.36, 1],
-                  }}
-                  style={{ whiteSpace: char === ' ' ? 'pre' : 'normal' }}
-                >
-                  {char}
-                </motion.span>
-              ))}
-            </h1>
-          </div>
-
-          {/* Sub */}
           <motion.p
-            className="font-serif italic text-lg sm:text-xl text-[rgba(226,221,212,0.55)] max-w-lg mx-auto leading-relaxed"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.2, duration: 0.6 }}
+            className="font-serif italic text-base sm:text-lg max-w-md mx-auto leading-relaxed text-[rgba(255,245,244,0.80)]"
+            style={{ textShadow: '0 1px 18px rgba(8,2,2,0.96)' }}
+            {...fadeUp(1.5, 1)}
           >
-            OmniCurve collapses prediction markets into a single continuous liquidity curve — one pool, infinite strikes.
+            One pool. Every strike price. Priced continuously by the Gaussian curve.
           </motion.p>
 
-          {/* CTAs */}
           <motion.div
-            className="flex flex-col sm:flex-row gap-4 justify-center"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.5, duration: 0.5 }}
+            className="flex flex-col sm:flex-row gap-3 justify-center"
+            {...fadeUp(2.5, 1)}
           >
             <Link
               to="/markets"
-              className="inline-flex items-center justify-center gap-2 px-8 py-3.5 bg-[#FFB800] text-[#060810] font-display font-700 text-sm tracking-wide rounded hover:bg-[#ffc933] active:scale-[0.98] transition-all"
+              className="inline-flex items-center justify-center gap-2 px-9 py-4 bg-[#c8102e] text-white font-display font-700 text-sm tracking-wider rounded hover:bg-[#a5001b] active:scale-[0.98] transition-all"
+              style={{ boxShadow: '0 0 32px rgba(200,16,46,0.4)' }}
             >
               Enter Markets →
             </Link>
             <Link
               to="/docs"
-              className="inline-flex items-center justify-center gap-2 px-8 py-3.5 border border-[rgba(255,255,255,0.12)] text-[rgba(226,221,212,0.7)] font-display font-600 text-sm tracking-wide rounded hover:border-[rgba(255,184,0,0.3)] hover:text-[#E2DDD4] transition-all"
+              className="inline-flex items-center justify-center gap-2 px-9 py-4 border font-display font-600 text-sm tracking-wider rounded transition-all border-[rgba(255,255,255,0.45)] text-[rgba(255,245,244,0.85)] hover:border-[rgba(255,255,255,0.70)] hover:text-white"
+              style={{ backdropFilter: 'blur(8px)' }}
             >
-              Read the Docs
+              How It Works
             </Link>
           </motion.div>
 
-          {/* Stats bar */}
           <motion.div
-            className="grid grid-cols-3 gap-6 max-w-sm mx-auto pt-8 border-t border-[rgba(255,255,255,0.06)]"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 2, duration: 0.6 }}
+            className="grid grid-cols-3 gap-8 max-w-xs mx-auto pt-8 border-t border-[rgba(255,255,255,0.20)]"
+            {...fadeUp(2.5, 1)}
           >
-            <div className="text-center">
-              <p className="font-mono text-2xl text-[#FFB800]">{markets?.length ?? 0}</p>
-              <p className="text-[10px] font-display tracking-widest text-[rgba(226,221,212,0.3)] uppercase mt-1">Markets</p>
-            </div>
-            <div className="text-center">
-              <p className="font-mono text-2xl text-[#FFB800]">
-                ${(totalLiquidity / 1e6).toFixed(0)}
-              </p>
-              <p className="text-[10px] font-display tracking-widest text-[rgba(226,221,212,0.3)] uppercase mt-1">TVL</p>
-            </div>
-            <div className="text-center">
-              <p className="font-mono text-2xl text-[#FFB800]">{resolvedCount}</p>
-              <p className="text-[10px] font-display tracking-widest text-[rgba(226,221,212,0.3)] uppercase mt-1">Resolved</p>
-            </div>
+            {[
+              { value: markets?.length ?? 0,                    label: 'Markets'  },
+              { value: `$${(totalLiquidity / 1e6).toFixed(0)}`, label: 'TVL'      },
+              { value: resolvedCount,                            label: 'Resolved' },
+            ].map(({ value, label }) => (
+              <div key={label} className="text-center">
+                <p
+                  className="font-mono text-xl text-[#C41230]"
+                  style={{ textShadow: '0 1px 18px rgba(8,2,2,0.96)' }}
+                >
+                  {value}
+                </p>
+                <p className="text-[9px] font-display tracking-widest uppercase mt-1 text-[rgba(255,245,244,0.55)]">
+                  {label}
+                </p>
+              </div>
+            ))}
           </motion.div>
         </div>
       </main>
 
-      {/* Tech strip */}
-      <div className="border-t border-[rgba(255,255,255,0.05)] py-4 px-6">
-        <div className="max-w-4xl mx-auto flex flex-wrap items-center justify-center gap-6 text-[10px] font-mono text-[rgba(226,221,212,0.2)] tracking-wider uppercase">
-          <span>Arbitrum Sepolia</span>
+      {/* ── Tech strip ── */}
+      <motion.div
+        className="border-t py-4 px-6 border-[rgba(255,255,255,0.14)]"
+        {...fadeUp(3.5, 1)}
+      >
+        <div className="max-w-4xl mx-auto flex flex-wrap items-center justify-center gap-6 text-[10px] font-mono tracking-wider uppercase text-[rgba(255,245,244,0.45)]">
+          <span>Arbitrum Stylus</span>
+          <span>·</span>
+          <span>Rust → WASM On-chain Math</span>
           <span>·</span>
           <span>Gaussian CDF Pricing</span>
           <span>·</span>
-          <span>EIP-1167 Proxies</span>
+          <span>EIP-1167 Proxy Factory</span>
           <span>·</span>
-          <span>Rust/WASM</span>
-          <span>·</span>
-          <span>Non-custodial</span>
+          <span>Non-Custodial</span>
         </div>
-      </div>
+      </motion.div>
     </div>
   )
 }
