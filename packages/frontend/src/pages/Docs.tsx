@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { motion, useScroll, useTransform, MotionValue } from 'framer-motion'
+import { motion, useScroll, useSpring, useTransform, MotionValue } from 'framer-motion'
 import { GaussianChart } from '@/components/market/GaussianChart'
 import { Slider } from '@/components/ui/Slider'
 import { pYes, pNo } from '@/lib/math'
@@ -144,7 +144,12 @@ function Caption({
 
 function ScrollStory() {
   const ref = useRef<HTMLDivElement>(null)
-  const { scrollYProgress: t } = useScroll({ target: ref, offset: ['start start', 'end end'] })
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end end'] })
+  // Wheel/trackpad scrolling arrives in discrete steps; driving the whole
+  // stage straight from it makes every chapter jump a frame at a time. A
+  // critically-damped spring turns those steps into a continuous glide —
+  // every transform below inherits the smoothing for free.
+  const t = useSpring(scrollYProgress, { stiffness: 110, damping: 28, restDelta: 0.0001 })
 
   /* — curve state, scroll-driven — */
   const mu = useTransform(t, [0, 0.66, 0.745, 1], [PRIOR_MU, PRIOR_MU, 3358, 3358])
@@ -465,17 +470,22 @@ function Hero() {
         Protocol Documentation
       </motion.p>
 
-      <motion.h1
-        initial={{ opacity: 0, y: 28 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.15, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-        className="font-display font-800 tracking-tight leading-[0.95] text-center text-[color:var(--text-primary)]"
-        style={{ fontSize: 'clamp(2.6rem, 7vw, 5.2rem)' }}
+      {/* Editorial headline — each line unmasks with a stagger. Lines stay
+          centered so the hero keeps its symmetric composition with the
+          curve and scroll cue below. */}
+      <h1
+        className="font-display font-800 tracking-tight leading-[0.98] text-center text-[color:var(--text-primary)]"
+        style={{ fontSize: 'clamp(2.8rem, 7.5vw, 5.6rem)' }}
       >
-        The market
-        <br />
-        is a curve.
-      </motion.h1>
+        <MaskLines
+          delay={0.15}
+          lines={[
+            'The market',
+            'is a',
+            <span key="l3" className="text-[#C8102E]">curve.</span>,
+          ]}
+        />
+      </h1>
 
       <motion.p
         initial={{ opacity: 0, y: 20 }}
@@ -549,17 +559,184 @@ function Reveal({ children, delay = 0, className = '' }: {
   )
 }
 
+/* Editorial line-mask reveal: each line rises out of an overflow-hidden
+   wrapper, staggered — type appears to be unmasked rather than faded in.
+   The in-view trigger MUST live on the (unclipped) container: the lines
+   start fully clipped by the mask, so observing them directly would never
+   report an intersection and the reveal would never fire. */
+const maskLineVariant = {
+  hidden: { y: '112%' },
+  show: { y: '0%', transition: { duration: 0.85, ease: [0.22, 1, 0.36, 1] as const } },
+}
+
+function MaskLines({ lines, className = '', lineClassName = '', delay = 0 }: {
+  lines: React.ReactNode[]
+  className?: string
+  lineClassName?: string
+  delay?: number
+}) {
+  return (
+    <motion.div
+      className={className}
+      initial="hidden"
+      whileInView="show"
+      viewport={{ once: true, margin: '-70px' }}
+      custom={delay}
+      variants={{
+        hidden: {},
+        show: (d: number) => ({ transition: { staggerChildren: 0.09, delayChildren: d } }),
+      }}
+    >
+      {lines.map((l, i) => (
+        <span key={i} className="block overflow-hidden">
+          <motion.span variants={maskLineVariant} className={`block ${lineClassName}`}>
+            {l}
+          </motion.span>
+        </span>
+      ))}
+    </motion.div>
+  )
+}
+
 function SectionHead({ num, title, sub }: { num: string; title: string; sub?: string }) {
   return (
-    <Reveal className="mb-10">
-      <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-[#C8102E] mb-3">{num}</p>
-      <h2 className="font-display font-800 text-3xl sm:text-4xl tracking-tight text-[color:var(--text-primary)]">
-        {title}
-      </h2>
+    <div className="mb-10">
+      <Reveal>
+        <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-[#C8102E] mb-3">{num}</p>
+      </Reveal>
+      <MaskLines
+        lines={[title]}
+        delay={0.05}
+        className="font-display font-800 text-3xl sm:text-4xl tracking-tight text-[color:var(--text-primary)]"
+      />
       {sub && (
-        <p className="font-serif italic text-base mt-3 max-w-xl text-[color:var(--text-muted)]">{sub}</p>
+        <Reveal delay={0.18}>
+          <p className="font-serif italic text-base mt-3 max-w-xl text-[color:var(--text-muted)]">{sub}</p>
+        </Reveal>
       )}
-    </Reveal>
+    </div>
+  )
+}
+
+/* ── Stats wall — giant serif numerals in columns that drift at different
+      speeds while the section scrolls through the viewport. ─────────────── */
+
+const STAT_COLUMNS: { v: string; label: string }[][] = [
+  [
+    { v: '1', label: 'curve per market — every strike priced from one pool' },
+    { v: '∞', label: 'strikes — any continuous x, not a listed menu' },
+  ],
+  [
+    { v: '1%', label: 'fee on every trade, streamed pro-rata to LPs' },
+    { v: '$1', label: 'per winning token, redeemed at settlement' },
+  ],
+  [
+    { v: '24h', label: 'timelock between resolution proposal and finality' },
+    { v: '10⁻⁷', label: 'max error of the on-chain erf approximation' },
+  ],
+]
+
+function StatCell({ v, label }: { v: string; label: string }) {
+  return (
+    <div className="border-t border-[rgba(62,44,30,0.18)] pt-5 pb-14">
+      <p
+        className="font-serif text-[#C8102E] leading-none"
+        style={{ fontSize: 'clamp(4rem, 8.5vw, 7.5rem)' }}
+      >
+        {v}
+      </p>
+      <p className="font-mono text-[11px] leading-relaxed mt-5 max-w-[26ch] text-[rgba(35,24,18,0.62)]">
+        {label}
+      </p>
+    </div>
+  )
+}
+
+function StatsWall() {
+  const ref = useRef<HTMLDivElement>(null)
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] })
+  // three columns, three speeds — the multi-rate drift is the whole effect.
+  // Offsets stay modest so the section never opens with a hollow band that
+  // reads as broken padding.
+  const y0 = useTransform(scrollYProgress, [0, 1], [30, -40])
+  const y1 = useTransform(scrollYProgress, [0, 1], [80, -90])
+  const y2 = useTransform(scrollYProgress, [0, 1], [130, -60])
+
+  return (
+    <section ref={ref} className="max-w-6xl mx-auto px-4 sm:px-6 pt-32 pb-16 overflow-visible">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-x-10 items-start">
+        <motion.div style={{ y: y0 }}>
+          <Reveal>
+            <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-[#C8102E] mb-3">
+              06½ / The protocol, in numbers
+            </p>
+            <p className="font-serif text-[15px] leading-relaxed text-[rgba(35,24,18,0.8)] max-w-[30ch] mb-14">
+              A single Gaussian carries the whole market. Everything else the protocol does
+              reduces to a handful of constants.
+            </p>
+          </Reveal>
+          {STAT_COLUMNS[0].map((s) => <StatCell key={s.v} {...s} />)}
+        </motion.div>
+        <motion.div style={{ y: y1 }} className="md:pt-24">
+          {STAT_COLUMNS[1].map((s) => <StatCell key={s.v} {...s} />)}
+        </motion.div>
+        <motion.div style={{ y: y2 }} className="md:pt-48">
+          {STAT_COLUMNS[2].map((s) => <StatCell key={s.v} {...s} />)}
+        </motion.div>
+      </div>
+    </section>
+  )
+}
+
+/* ── Lifecycle fan — the four resolution steps spread into a tilted arc as
+      the section scrolls into view. ──────────────────────────────────────── */
+
+const FAN_ANGLES = [-9, -3, 3, 9]
+
+function LifecycleFan() {
+  const ref = useRef<HTMLDivElement>(null)
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start 0.9', 'start 0.35'] })
+  const spread = useSpring(scrollYProgress, { stiffness: 90, damping: 24 })
+
+  return (
+    <div ref={ref} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {LIFECYCLE.map((s, i) => (
+        <FanCard key={s.fn} step={s} i={i} spread={spread} />
+      ))}
+    </div>
+  )
+}
+
+function FanCard({ step, i, spread }: {
+  step: (typeof LIFECYCLE)[number]
+  i: number
+  spread: MotionValue<number>
+}) {
+  const angle = FAN_ANGLES[i] ?? 0
+  // edges of the fan sit lower, like cards splayed in a hand
+  const arcDrop = Math.abs(angle) * 2.4
+  const rotate = useTransform(spread, [0, 1], [0, angle])
+  const y = useTransform(spread, [0, 1], [70, arcDrop])
+  const opacity = useTransform(spread, [0, 0.25 + i * 0.12, 0.55 + i * 0.12], [0, 0, 1])
+
+  return (
+    <motion.div style={{ rotate, y, opacity, transformOrigin: 'bottom center' }}>
+      <div
+        className="border border-[color:var(--border-dim)] rounded p-5 h-full relative"
+        style={{ background: 'var(--bg-surface)', boxShadow: '0 14px 36px rgba(62,44,30,0.12)' }}
+      >
+        <span className="font-mono text-[10px] text-[color:var(--text-subtle)]">
+          STEP 0{i + 1}
+        </span>
+        <p className="font-mono text-[13px] text-[#C8102E] mt-2 break-all">{step.fn}()</p>
+        <p className="font-display font-600 text-sm mt-2 text-[color:var(--text-primary)]">
+          {step.title}
+        </p>
+        <p className="font-serif text-[13px] leading-relaxed mt-2 text-[color:var(--text-muted)]">
+          {step.desc}
+        </p>
+      </div>
+    </motion.div>
   )
 }
 
@@ -646,6 +823,51 @@ const MATH_PLATES = [
   },
 ]
 
+/* ── 09 — display heading: huge type overlapping a red chevron that drifts
+      on scroll, after the reference site's "Private Equity" slides ───────── */
+
+function RolesHead() {
+  const ref = useRef<HTMLDivElement>(null)
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] })
+  const shapeY = useTransform(scrollYProgress, [0, 1], [50, -50])
+  const shapeX = useTransform(scrollYProgress, [0, 1], [30, -30])
+
+  return (
+    <div ref={ref} className="relative mb-14 py-6">
+      {/* the red chevron — parallaxes against the type above it */}
+      <motion.div
+        aria-hidden
+        style={{ y: shapeY, x: shapeX }}
+        className="absolute right-[2%] top-[2%] w-[44%] h-[78%] bg-[#C8102E] opacity-90 skew-x-[-16deg] pointer-events-none"
+      />
+      <div className="relative">
+        <Reveal>
+          <p className="font-mono text-[10px] tracking-[0.3em] uppercase text-[#C8102E] mb-4">
+            09 / Two roles
+          </p>
+        </Reveal>
+        <h2
+          className="font-display font-800 tracking-tight leading-[1.02] text-[color:var(--text-primary)]"
+          style={{ fontSize: 'clamp(2.4rem, 6vw, 4.6rem)' }}
+        >
+          <MaskLines
+            lines={[
+              'Bettors steer.',
+              <span key="l2" className="pl-[16%]">LPs underwrite.</span>,
+            ]}
+          />
+        </h2>
+        <Reveal delay={0.2}>
+          <p className="font-serif italic text-base mt-5 max-w-xl text-[color:var(--text-muted)]">
+            The separation is the security model: only capital at risk on a position can move
+            the curve.
+          </p>
+        </Reveal>
+      </div>
+    </div>
+  )
+}
+
 /* ── 10 — resolution lifecycle ──────────────────────────────────────────── */
 
 const LIFECYCLE = [
@@ -676,6 +898,9 @@ export default function Docs() {
     <div className="overflow-x-clip">
       <Hero />
       <ScrollStory />
+
+      {/* ── the protocol in numbers — multi-speed parallax columns ── */}
+      <StatsWall />
 
       {/* ── 07 / TRY IT ── */}
       <section className="max-w-4xl mx-auto px-4 sm:px-6 pt-28 pb-8">
@@ -720,11 +945,7 @@ export default function Docs() {
 
       {/* ── 09 / TWO ROLES ── */}
       <section className="max-w-4xl mx-auto px-4 sm:px-6 pt-28 pb-8">
-        <SectionHead
-          num="09 / Two roles"
-          title="Bettors steer. LPs underwrite."
-          sub="The separation is the security model: only capital at risk on a position can move the curve."
-        />
+        <RolesHead />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Reveal>
             <div
@@ -790,27 +1011,7 @@ export default function Docs() {
           title="Settling against reality"
           sub="Pull-based claiming, with a timelock between proposal and finality."
         />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {LIFECYCLE.map((s, i) => (
-            <Reveal key={s.fn} delay={i * 0.1}>
-              <div
-                className="border border-[color:var(--border-dim)] rounded p-5 h-full relative"
-                style={{ background: 'var(--bg-surface)' }}
-              >
-                <span className="font-mono text-[10px] text-[color:var(--text-subtle)]">
-                  STEP 0{i + 1}
-                </span>
-                <p className="font-mono text-[13px] text-[#C8102E] mt-2 break-all">{s.fn}()</p>
-                <p className="font-display font-600 text-sm mt-2 text-[color:var(--text-primary)]">
-                  {s.title}
-                </p>
-                <p className="font-serif text-[13px] leading-relaxed mt-2 text-[color:var(--text-muted)]">
-                  {s.desc}
-                </p>
-              </div>
-            </Reveal>
-          ))}
-        </div>
+        <LifecycleFan />
       </section>
 
       {/* ── 11 / ARCHITECTURE ── */}
