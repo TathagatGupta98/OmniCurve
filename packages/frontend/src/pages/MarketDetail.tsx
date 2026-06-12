@@ -21,6 +21,10 @@ const TRADE_TABS = [
   { label: 'Provide Liquidity', value: 'lp' },
 ]
 
+// Markets whose owner-controls panel is hidden in the UI.
+// #6 = "What year will Anthropic release a new claude model after Fable?"
+const HIDDEN_OWNER_CONTROLS_MARKET_IDS = ['6']
+
 const DARK = {
   loadSkeleton:   'bg-[rgba(10,10,10,0.50)]',
   errorText:      'text-[#B42318]',
@@ -299,7 +303,7 @@ export default function MarketDetail() {
       )}
 
       {/* ── Owner controls ─────────────────────────────────────────── */}
-      {isOwner && !resolved && (
+      {isOwner && !resolved && !HIDDEN_OWNER_CONTROLS_MARKET_IDS.includes(String(market.marketId)) && (
         <div className={`border rounded-xl p-5 transition-colors duration-300 ${T.ownerBox}`}>
           <p className={`text-xs font-display tracking-widest uppercase mb-4 transition-colors duration-300 ${T.ownerLabel}`}>
             Owner Controls
