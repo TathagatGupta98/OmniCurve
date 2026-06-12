@@ -86,11 +86,26 @@ export const initializeSocket = (server: HttpServer) => {
  * Broadcasts market state updates to all clients subscribed to the specific market's room
  */
 export const broadcastMarketUpdate = (
-  marketId: string, 
+  marketId: string,
   newData: { currentMu: number; currentSigma: number; totalLiquidity: number }
 ) => {
   if (io) {
     io.to(marketId).emit('marketStateUpdated', newData);
+    // Global signal (all clients, not just the market room) so list views —
+    // marketplace, dashboard — know to refetch after a stake or liquidity event.
+    io.emit('marketsChanged', { marketId });
+  } else {
+    console.warn('[Socket.io] Socket server not initialized yet');
+  }
+};
+
+/**
+ * Broadcasts to ALL clients that a brand-new market was created on-chain.
+ */
+export const broadcastMarketCreated = (marketId: string) => {
+  if (io) {
+    io.emit('marketCreated', { marketId });
+    io.emit('marketsChanged', { marketId });
   } else {
     console.warn('[Socket.io] Socket server not initialized yet');
   }

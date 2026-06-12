@@ -32,6 +32,16 @@ export const factoryAbi = [
     outputs: [{ name: '', type: 'address' }],
     stateMutability: 'view',
   },
+  {
+    type: 'event',
+    name: 'MarketCreated',
+    inputs: [
+      { name: 'market_id', type: 'uint256', indexed: true },
+      { name: 'amm', type: 'address', indexed: false },
+      { name: 'router', type: 'address', indexed: false },
+      { name: 'lp_token', type: 'address', indexed: false },
+    ],
+  },
 ] as const;
 
 export const ammAbi = [

@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import { useAccount } from 'wagmi'
+import { useAccount, usePublicClient } from 'wagmi'
+import { useQueryClient } from '@tanstack/react-query'
 import { useMarkets } from '@/hooks/useMarkets'
+import { flushPendingMeta } from '@/lib/pendingMeta'
 import { useTheme } from '@/hooks/useTheme'
 import { MarketCard } from '@/components/market/MarketCard'
 import { CreateMarketModal } from '@/components/market/CreateMarketModal'
@@ -54,6 +56,16 @@ export default function Marketplace() {
   const [showCreate, setShowCreate] = useState(false)
 
   const { data: markets, isLoading, error } = useMarkets()
+  const publicClient = usePublicClient()
+  const queryClient = useQueryClient()
+
+  // Replay any market questions whose post-create PATCH never reached the
+  // backend, so markets don't stay stuck as "Market #N".
+  useEffect(() => {
+    flushPendingMeta(publicClient).then((sent) => {
+      if (sent) queryClient.invalidateQueries({ queryKey: ['markets'] })
+    })
+  }, [publicClient, queryClient])
 
   const filtered = (markets ?? []).filter((m) => {
     if (category !== 'All' && m.category !== category) return false

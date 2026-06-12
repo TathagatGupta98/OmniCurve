@@ -10,6 +10,7 @@ import { wagmiConfig } from '@/config/wagmi'
 import { connectSocket } from '@/lib/socket'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import { useTheme } from '@/hooks/useTheme'
+import { useLiveRefetch } from '@/hooks/useLiveRefetch'
 import App from './App'
 import '@/styles/globals.css'
 
@@ -26,6 +27,7 @@ function Root() {
   useEffect(() => {
     connectSocket()
   }, [])
+  useLiveRefetch()
   return <App />
 }
 

@@ -47,6 +47,15 @@ const envSchema = z.object({
   GOLDSKY_GRAPHQL_ENDPOINT: z.string().optional().default(''),
   GOLDSKY_WEBHOOK_SECRET: z.string().optional().default(''),
 
+  // ─── Markets hidden from the app (stale/retired on-chain markets) ───
+  // Comma-separated market ids. Excluded markets are skipped by the DB seed and
+  // the chain watcher's factory reconciliation, so deleting their rows sticks.
+  EXCLUDED_MARKET_IDS: z
+    .string()
+    .optional()
+    .default('')
+    .transform((s) => s.split(',').map((v) => v.trim()).filter(Boolean)),
+
   // ─── Owner (fallback when contract owner() getter is not deployed) ───
   OWNER_ADDRESS: z
     .string()

@@ -173,7 +173,11 @@ ABIs for AMM proxy and Router proxy are fetched per-market: `market.ammAddress` 
 
 ### `src/config/wagmi.ts`
 
-Configure `arbitrumSepolia` with RainbowKit `getDefaultConfig`. Set up MetaMask, Coinbase, WalletConnect connectors. WalletConnect project ID from `import.meta.env.VITE_WALLETCONNECT_PROJECT_ID`.
+Configure `arbitrumSepolia` with RainbowKit connectors. WalletConnect is only enabled when `VITE_WALLETCONNECT_PROJECT_ID` is a real project ID (the placeholder `omnicurve-dev` is rejected silently).
+
+**Transport:** use `fallback([http(official), http(publicnode)])` with `batch: true` and `retryCount: 5` on both. The single official RPC rate-limits bursts aggressively; without batching the multi-call LP flow (approve → acceptOwnership → setDistribution → addLiquidity) fails at random steps with opaque errors that look like contract reverts but are actually HTTP 429s.
+
+**Gas fees (`src/lib/gas.ts`):** `getGasFees()` reads the current block's `baseFeePerGas` and returns `maxFeePerGas = baseFee * 3` (floor 200 Mwei). Do **not** use `estimateFeesPerGas()` — it samples a point-in-time value that becomes stale between sequential transactions in the same flow, producing `maxFeePerGas < baseFee` reverts.
 
 ### `src/lib/api.ts`
 
@@ -185,6 +189,10 @@ getMarkets(params?: { category?: string; active?: boolean })
 
 getMarket(id: string)
   // GET /api/markets/:id → Market & { positions: Position[] }
+
+updateMarketMetadata(id: string, meta: { title: string; category?: string })
+  // PATCH /api/markets/:id/metadata → Market
+  // Stores the question text after createMarket confirms — title is off-chain only.
 
 getPricePreview(id: string, x: number, direction: 'yes'|'no', stakeAmount?: number)
   // GET /api/markets/:id/price?x=&direction=&stakeAmount=
@@ -285,16 +293,35 @@ Return shape:
 ```
 
 ### `useLP({ marketId, ammAddress })`
-Same approval-then-write pattern for:
-- `add`: approve USDC to `ammAddress`, then `amm.addLiquidity(amountWad, targetMuWad, targetSigmaWad)`
-- `remove`: `amm.removeLiquidity(sharesToRemoveWad)` (no approval needed)
-- `claim`: `amm.claimFees()`
+
+Steps exported: `'idle' | 'approving' | 'accepting' | 'seeding' | 'submitting' | 'confirmed' | 'error'`
+
+- **`add(amountUsdc, seed?)`** — Full seeding-aware deposit flow:
+  1. If `USDC allowance < amountUsdc` → `USDC.approve(ammAddress, MaxUint256)` (`approving`)
+  2. If `seed` is provided (creator only, unseeded market):
+     - If wallet is `pending_owner` (read slot `0x1`) → `AMM.acceptOwnership()` (`accepting`)
+     - `AMM.setDistribution(mu, sigma)` (`seeding`)
+  3. `AMM.addLiquidity(amountWad, 0, 0)` (`submitting`) — μ/σ args are always `0` since the contract ignores them
+  4. Each receipt is checked for `status === 'reverted'` and throws on failure
+
+- **`remove(sharesWad)`** — `AMM.removeLiquidity(sharesWad)`, no approval needed
+- **`claim()`** — `AMM.claimFees()`
+
+`getGasFees()` is called fresh before each `writeContractAsync` inside `writeAmm()`, so each transaction in a multi-step flow gets the current block's base fee × 3 rather than a stale snapshot.
 
 ### `usePortfolio(address)`
 React Query wrapping `api.getPortfolio(address)`. Only enabled when `address` is defined.
 
 ### `useCreateMarket()`
-`factory.createMarket(USDC_ADDRESS, sigmaMinWad)`. On receipt, read the `MarketCreated` log, extract new market `index`. Navigate to `/markets/:index`. Invalidate `useMarkets`.
+```
+create(sigmaMin, meta?) flow:
+  1. factory.createMarket(USDC_ADDRESS, floatToWad(sigmaMin))
+  2. waitForTransactionReceipt — throws if status === 'reverted'
+  3. parseEventLogs(receipt, 'MarketCreated') → extract market_id
+  4. api.updateMarketMetadata(market_id, { title, category }) — non-fatal if it fails
+  5. navigate('/markets')
+```
+`meta` is `{ title: string; category?: string }` — the human question text from `CreateMarketModal`. Without step 4, the market shows as "Market #N" forever.
 
 ---
 
@@ -396,32 +423,30 @@ Step indicator: Approve → Confirm → Done
 
 Three tabs: Deposit | Withdraw | Claim
 
+The panel queries **on-chain seed state** at mount via a `['amm-seed-state', ammAddress]` React Query:
+- Reads `globalSigma` (function call), `owner` (function call), `pending_owner` (slot `0x1`), `sigma_min` (slot `0x4`) in parallel
+- `seeded = sigma > 0n`; `canSeed = !seeded && (wallet === owner || wallet === pendingOwner)`
+
 **Deposit tab:**
 - Amount input (USDC)
-- `targetMu` + `targetSigma` inputs — only shown/enabled if `!market.tradesStarted`. Display note: "Curve is locked after first trade — these parameters will be ignored."
-- LP tokens estimate: `shares ≈ amountWad / totalLiquidity * totalLpSupply` (read `totalSupply` from LP token contract via `useReadContract`)
-- Actions: [Approve USDC] → [Add Liquidity]
+- If `canSeed`: show μ/σ seed inputs with `sigma > sigma_min` validation. These are passed to `useLP.add()` as `{ mu, sigma }` and trigger the acceptOwnership → setDistribution → addLiquidity sequence. Button label cycles: "Approving USDC..." → "Accepting market ownership..." → "Seeding the curve (setDistribution)..." → "Add Liquidity"
+- If `!seeded && !canSeed`: informational note (creator hasn't seeded yet; deposits still accepted as pure collateral)
+- If `seeded`: note that curve is live; μ/σ inputs hidden
+- LP tokens estimate: `shares ≈ amountWad / totalLiquidity * totalLpSupply`
+- Actions: [Approve USDC] → [Add Liquidity] (disable until amount > 0; disable also if `canSeed && needsDistribution`)
 
-**Withdraw tab:**
-- LP token amount input
-- Estimated USDC back: `sharesToRemove / totalLpSupply * totalLiquidity`
-- Action: [Remove Liquidity]
+**Withdraw tab:** LP token amount input → `AMM.removeLiquidity`
 
-**Claim tab:**
-- Pending fees in USDC (from `api.getLpStats`)
-- Action: [Claim Fees]
+**Claim tab:** Pending fees from `api.getLpStats` → `AMM.claimFees`
 
 ### CreateMarketModal (`src/components/market/CreateMarketModal.tsx`)
 
 Form fields (validated with `react-hook-form` + Zod):
-- `title` (string, required) — stored in DB, not on-chain
+- `title` (string, min 4 chars, required) — stored in DB via PATCH, not on-chain
 - `category` (select: Crypto | Macro | Sports | Other)
 - `sigmaMin` (number > 0) — minimum sigma in display units, converted to WAD on submit
 
-On submit:
-1. Convert `sigmaMin` to WAD: `floatToWad(sigmaMin)`
-2. Call `factory.createMarket(USDC_ADDRESS, sigmaMinWad)`
-3. On confirmation: extract new market index from receipt logs → navigate to `/markets/:index`
+On submit, calls `create(sigmaMin, { title, category })`. The hook stores the title in the DB after the chain tx confirms. Without this the market shows as "Market #N".
 
 ---
 
@@ -519,9 +544,25 @@ Sections:
 | addLiquidity | `ammAddress` |
 | removeLiquidity / claimFees | No approval needed |
 
-### `trades_started` Flag
+### Market Seeding — Creator Flow
 
-Once any trade executes on a market, the `targetMu` / `targetSigma` parameters in `addLiquidity` are silently ignored by the contract. Detect this from `market.tradesStarted` (populated by backend from chain events). In `LPPanel`, hide those inputs and show a locked state indicator.
+A fresh market has μ=0 σ=0 and no trading until the creator seeds it. The `addLiquidity` μ/σ args are **always ignored** by the contract (curve-neutral LPs). Seeding requires:
+
+```
+AMM.acceptOwnership()   ← creator is pending_owner from factory; must accept before any owner-only call
+AMM.setDistribution(mu, sigma)   ← σ must be > sigma_min
+```
+
+Both must happen in the same wallet session before or separately from the first deposit. The LP deposit flow in `useLP.add(amount, { mu, sigma })` does this automatically when `canSeed` is true. Outside that flow (e.g. scripting), call them explicitly.
+
+`trades_started` (storage slot `0xf`): once any trade executes, `set_distribution` / `set_prior_weight` revert. The on-chain seeding window closes at first trade, not first deposit.
+
+### AMM Storage Slots (no public getters for these)
+
+| Slot | Field | Note |
+|------|-------|------|
+| `0x1` | `pending_owner` | Last 20 bytes = address |
+| `0x4` | `sigma_min` | int256 WAD |
 
 ### Socket Connection Lifecycle
 

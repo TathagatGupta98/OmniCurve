@@ -10,6 +10,7 @@ import {
   getAmmOwner,
   computePendingRewards,
 } from '../services/chainService';
+import { reserveMetadata } from '../services/metadataReservationService';
 
 const router = Router();
 
@@ -19,6 +20,88 @@ router.get('/', marketController.getMarkets);
 router.get('/:marketId', marketController.getMarketDetails);
 
 // ─── Section 3: New routes ───────────────────────────────────────────────────
+
+/**
+ * POST /api/markets/metadata-reservation
+ *
+ * Announces the question for a market the creator is *about* to create
+ * on-chain. The chain watcher applies it when it sees MarketCreated from this
+ * creator, so the title survives even if the frontend's post-create PATCH
+ * never arrives (RPC timeout, closed tab, etc.).
+ */
+router.post('/metadata-reservation', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { creator, title, category } = req.body as {
+      creator?: unknown;
+      title?: unknown;
+      category?: unknown;
+    };
+
+    if (typeof creator !== 'string' || !/^0x[0-9a-fA-F]{40}$/.test(creator)) {
+      return res.status(400).json({ success: false, error: '"creator" must be a 0x-prefixed address' });
+    }
+    if (typeof title !== 'string' || title.trim().length < 4 || title.trim().length > 200) {
+      return res.status(400).json({
+        success: false,
+        error: '"title" is required and must be a string of 4–200 characters',
+      });
+    }
+    if (category !== undefined && (typeof category !== 'string' || category.length > 32)) {
+      return res.status(400).json({ success: false, error: '"category" must be a string of at most 32 characters' });
+    }
+
+    reserveMetadata(creator, { title: title.trim(), ...(category ? { category } : {}) });
+    res.status(200).json({ success: true, data: { reserved: true } });
+  } catch (error) {
+    next(error);
+  }
+});
+
+/**
+ * PATCH /api/markets/:id/metadata
+ *
+ * Sets the off-chain metadata (title, category) for a market. Called by the
+ * frontend right after Factory.createMarket confirms, so the market shows the
+ * question it asks instead of the "Market #N" placeholder. Upserts: the row
+ * may not exist yet if the chain watcher hasn't seen the MarketCreated event
+ * (the watcher's upsert never overwrites title/category on update).
+ */
+router.patch('/:id/metadata', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = String(req.params.id);
+    const { title, category } = req.body as { title?: unknown; category?: unknown };
+
+    if (!/^\d+$/.test(id)) {
+      return res.status(400).json({ success: false, error: 'Market id must be a numeric string' });
+    }
+    if (typeof title !== 'string' || title.trim().length < 4 || title.trim().length > 200) {
+      return res.status(400).json({
+        success: false,
+        error: '"title" is required and must be a string of 4–200 characters',
+      });
+    }
+    if (category !== undefined && (typeof category !== 'string' || category.length > 32)) {
+      return res.status(400).json({ success: false, error: '"category" must be a string of at most 32 characters' });
+    }
+
+    const market = await prisma.market.upsert({
+      where: { marketId: id },
+      update: { title: title.trim(), ...(category ? { category } : {}) },
+      create: {
+        marketId: id,
+        title: title.trim(),
+        category: (category as string) || 'general',
+        currentMu: 0,
+        currentSigma: 0,
+        minVarianceBound: 0,
+      },
+    });
+
+    res.status(200).json({ success: true, data: market });
+  } catch (error) {
+    next(error);
+  }
+});
 
 /**
  * GET /api/markets/:id/price?x=&direction=&stakeAmount=

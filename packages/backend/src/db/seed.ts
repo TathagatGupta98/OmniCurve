@@ -21,9 +21,7 @@ import { factoryAbi, ammAbi } from './abis';
 // Curated, human-readable titles per market id. Titles are off-chain metadata
 // (the factory stores none), so they live here and in the DB. Markets not listed
 // fall back to "Market #i". Listed markets have their title kept in sync on re-seed.
-const MARKET_TITLES: Record<string, { title: string; category: string }> = {
-  '0': { title: 'What will eth price be by the end of 2026?', category: 'Crypto' },
-};
+const MARKET_TITLES: Record<string, { title: string; category: string }> = {};
 
 async function seed() {
   console.log('🌱 Starting database seed...\n');
@@ -52,6 +50,10 @@ async function seed() {
 
   // ─── Step 2: Iterate each market and upsert ───
   for (let i = 0; i < count; i++) {
+    if (config.EXCLUDED_MARKET_IDS.includes(i.toString())) {
+      console.log(`─── Market #${i} ─── 🚫 excluded (EXCLUDED_MARKET_IDS) — skipping\n`);
+      continue;
+    }
     const marketIdBigInt = BigInt(i);
 
     console.log(`─── Market #${i} ───`);
@@ -106,7 +108,17 @@ async function seed() {
 
     const rawMu = await readAmmField<bigint>('globalMu', 0n);
     const rawSigma = await readAmmField<bigint>('globalSigma', 0n);
-    const rawSigmaMin = await readAmmField<bigint>('sigmaMin', 0n);
+    // The deployed AMM has no sigmaMin() getter — fall back to raw storage
+    // slot 4 (0 owner, 1 pending_owner, 2 mu, 3 sigma, 4 sigma_min).
+    let rawSigmaMin = await readAmmField<bigint>('sigmaMin', 0n);
+    if (rawSigmaMin === 0n) {
+      try {
+        const slot = await publicClient.getStorageAt({ address: ammAddress, slot: '0x4' });
+        if (slot) rawSigmaMin = BigInt(slot);
+      } catch {
+        // keep 0
+      }
+    }
     const rawLiquidity = await readAmmField<bigint>('availableLiquidity', 0n);
     const rawIsResolved = await readAmmField<boolean>('isResolved', false);
     const rawWinningId = await readAmmField<bigint>('winningTokenId', 0n);

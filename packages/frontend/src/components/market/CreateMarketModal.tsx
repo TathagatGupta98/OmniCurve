@@ -35,7 +35,7 @@ export function CreateMarketModal({ open, onClose }: CreateMarketModalProps) {
   const isSubmitting = step === 'submitting'
 
   const onSubmit = async (data: FormValues) => {
-    await create(data.sigmaMin)
+    await create(data.sigmaMin, { title: data.title, category: data.category })
   }
 
   const handleClose = () => {

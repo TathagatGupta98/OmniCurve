@@ -37,6 +37,39 @@ export function LPPanel({ market }: LPPanelProps) {
     ammAddress: market.ammAddress,
   })
 
+  // On-chain seed state: an unseeded market (σ = 0) can only be initialized by
+  // its creator via setDistribution — the μ/σ args of addLiquidity are ignored
+  // by the contract. pending_owner (slot 1) and sigma_min (slot 4) have no
+  // public getters, so read the raw storage slots.
+  const { data: seedState } = useQuery({
+    queryKey: ['amm-seed-state', market.ammAddress],
+    enabled: !!publicClient && !!market.ammAddress,
+    staleTime: 30_000,
+    queryFn: async () => {
+      const amm = market.ammAddress as `0x${string}`
+      const [sigma, owner, pendingRaw, sigmaMinRaw] = await Promise.all([
+        publicClient!.readContract({ address: amm, abi: AMM_ABI, functionName: 'globalSigma' }) as Promise<bigint>,
+        publicClient!.readContract({ address: amm, abi: AMM_ABI, functionName: 'owner' }) as Promise<string>,
+        publicClient!.getStorageAt({ address: amm, slot: '0x1' }),
+        publicClient!.getStorageAt({ address: amm, slot: '0x4' }),
+      ])
+      return {
+        seeded: sigma > 0n,
+        owner: owner.toLowerCase(),
+        pendingOwner: pendingRaw ? `0x${pendingRaw.slice(-40)}`.toLowerCase() : '',
+        sigmaMin: sigmaMinRaw ? wadToFloat(BigInt(sigmaMinRaw)) : 0,
+      }
+    },
+  })
+
+  const unseeded = seedState ? !seedState.seeded : market.currentSigma <= 0
+  const canSeed =
+    unseeded &&
+    !!address &&
+    !!seedState &&
+    (seedState.owner === address.toLowerCase() || seedState.pendingOwner === address.toLowerCase())
+  const sigmaMin = Math.max(seedState?.sigmaMin ?? 0, market.minVarianceBound)
+
   const { data: totalSupply } = useReadContract({
     address: market.lpTokenAddress as `0x${string}`,
     abi: LP_TOKEN_ABI,
@@ -86,21 +119,22 @@ export function LPPanel({ market }: LPPanelProps) {
     },
   })
 
-  const isWorking = step === 'approving' || step === 'submitting'
+  const isWorking =
+    step === 'approving' || step === 'accepting' || step === 'seeding' || step === 'submitting'
   const isConfirmed = step === 'confirmed'
 
   const parsedMu = parseFloat(targetMu)
   const parsedSigma = parseFloat(targetSigma)
   const sigmaError =
-    !market.tradesStarted && targetSigma !== '' && parsedSigma <= market.minVarianceBound
-      ? `σ must be > ${market.minVarianceBound} (contract minimum)`
+    canSeed && targetSigma !== '' && parsedSigma <= sigmaMin
+      ? `σ must be > ${sigmaMin} (contract minimum)`
       : undefined
 
-  const needsDistribution = !market.tradesStarted && (!(parsedMu > 0) || !(parsedSigma > 0))
+  const needsDistribution = canSeed && (!(parsedMu > 0) || !(parsedSigma > 0))
 
   const handleDeposit = () => {
     if (!depositAmt || sigmaError || needsDistribution) return
-    add(depositAmt, parsedMu, parsedSigma)
+    add(depositAmt, canSeed ? { mu: parsedMu, sigma: parsedSigma } : undefined)
   }
 
   const handleWithdraw = () => {
@@ -181,24 +215,25 @@ export function LPPanel({ market }: LPPanelProps) {
               onChange={(e) => setDepositAmount(e.target.value)}
             />
 
-            {!market.tradesStarted ? (
+            {canSeed ? (
               <div className="space-y-3">
                 <p className="text-[11px] font-mono text-[rgba(35,24,18,0.45)] leading-relaxed">
-                  This market has no trades yet. Set the initial distribution parameters below
-                  to seed the probability curve.
+                  You created this market and its curve isn't seeded yet. Set the initial
+                  distribution below — it will be applied on-chain (setDistribution) before
+                  your deposit.
                 </p>
                 <div className="grid grid-cols-2 gap-3">
                   <Input
-                    label="Target μ — expected price"
+                    label="Initial μ — expected price"
                     type="number"
                     placeholder="e.g. 95000"
                     value={targetMu}
                     onChange={(e) => setTargetMu(e.target.value)}
                   />
                   <Input
-                    label={`Target σ (min: ${market.minVarianceBound})`}
+                    label={`Initial σ (min: ${sigmaMin})`}
                     type="number"
-                    placeholder={`> ${market.minVarianceBound}`}
+                    placeholder={`> ${sigmaMin}`}
                     value={targetSigma}
                     error={sigmaError}
                     onChange={(e) => setTargetSigma(e.target.value)}
@@ -210,11 +245,19 @@ export function LPPanel({ market }: LPPanelProps) {
                   </p>
                 )}
               </div>
+            ) : unseeded ? (
+              <div className="rounded-lg bg-[rgba(62,44,30,0.03)] border border-[rgba(62,44,30,0.10)] px-4 py-3">
+                <p className="text-[11px] font-mono text-[rgba(35,24,18,0.50)] leading-relaxed">
+                  This market's probability curve hasn't been seeded by its creator yet.
+                  You can still deposit collateral, but trading stays unavailable until
+                  the creator sets the initial μ/σ.
+                </p>
+              </div>
             ) : (
               <div className="rounded-lg bg-[rgba(62,44,30,0.03)] border border-[rgba(62,44,30,0.10)] px-4 py-3">
                 <p className="text-[11px] font-mono text-[rgba(35,24,18,0.50)] leading-relaxed">
-                  Trading has started — the curve is now driven by bets. Your deposit
-                  will be added at the current distribution.
+                  The curve is live and driven by bets. Your deposit will be added at
+                  the current distribution.
                 </p>
               </div>
             )}
@@ -233,7 +276,13 @@ export function LPPanel({ market }: LPPanelProps) {
               disabled={!depositAmt || isWorking || !!sigmaError || needsDistribution}
               onClick={handleDeposit}
             >
-              {step === 'approving' ? 'Approving USDC...' : 'Add Liquidity'}
+              {step === 'approving'
+                ? 'Approving USDC...'
+                : step === 'accepting'
+                  ? 'Accepting market ownership...'
+                  : step === 'seeding'
+                    ? 'Seeding the curve (setDistribution)...'
+                    : 'Add Liquidity'}
             </Button>
           </>
         )}

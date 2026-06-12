@@ -5,7 +5,7 @@ import {
   coinbaseWallet,
   walletConnectWallet,
 } from '@rainbow-me/rainbowkit/wallets'
-import { createConfig, http } from 'wagmi'
+import { createConfig, http, fallback } from 'wagmi'
 import { arbitrumSepolia } from 'wagmi/chains'
 
 // Arbitrum Sepolia base fees fluctuate rapidly; the default 1.2x multiplier
@@ -50,7 +50,21 @@ export const wagmiConfig = createConfig({
   connectors,
   chains: [arbitrumSepoliaWithBuffer],
   transports: {
-    [arbitrumSepolia.id]: http(),
+    // The official public RPC rate-limits bursts hard (HTTP 429), which made the
+    // multi-call approve→addLiquidity flow fail at random steps. Batch JSON-RPC
+    // calls, retry on transient errors, and fall back to a second public node.
+    [arbitrumSepolia.id]: fallback([
+      http('https://sepolia-rollup.arbitrum.io/rpc', {
+        batch: true,
+        retryCount: 5,
+        retryDelay: 300,
+      }),
+      http('https://arbitrum-sepolia-rpc.publicnode.com', {
+        batch: true,
+        retryCount: 3,
+        retryDelay: 300,
+      }),
+    ]),
   },
   ssr: false,
 })

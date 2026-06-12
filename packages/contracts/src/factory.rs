@@ -113,8 +113,11 @@ fn build_eip1167_creation_code(implementation: Address) -> [u8; 55] {
 fn market_salt(market_id: U256, domain: u8) -> B256 {
     let mut salt = [0u8; 32];
     let id_bytes: [u8; 32] = market_id.to_be_bytes();
-    // Use first 31 bytes from market_id, last byte is the domain tag.
-    salt[..31].copy_from_slice(&id_bytes[..31]);
+    // Use the LAST 31 bytes of market_id (least-significant in big-endian), so that
+    // sequential IDs (0, 1, 2 …) produce distinct salts. Using the first 31 bytes
+    // caused a collision: for IDs 0-255 those bytes are all zeros, making every
+    // market share the same CREATE2 salt and the second deploy fail.
+    salt[..31].copy_from_slice(&id_bytes[1..]);
     salt[31] = domain;
     B256::from(salt)
 }

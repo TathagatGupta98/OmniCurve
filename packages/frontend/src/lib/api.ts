@@ -111,6 +111,27 @@ export const api = {
     return request(`/api/markets/${id}/lp-stats?address=${address}`)
   },
 
+  // Announce the question for a market about to be created on-chain. The
+  // backend's chain watcher applies it when MarketCreated lands, so the title
+  // survives even if the post-create PATCH below never gets sent.
+  reserveMarketMetadata(creator: string, meta: { title: string; category?: string }): Promise<{ reserved: boolean }> {
+    return request('/api/markets/metadata-reservation', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ creator, ...meta }),
+    })
+  },
+
+  // Store the human-readable question + category for a freshly created market,
+  // so it doesn't show up as the "Market #N" placeholder.
+  updateMarketMetadata(id: string, meta: { title: string; category?: string }): Promise<Market> {
+    return request(`/api/markets/${id}/metadata`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(meta),
+    })
+  },
+
   getPortfolio(address: string): Promise<Portfolio> {
     return request(`/api/users/${address}/portfolio`)
   },

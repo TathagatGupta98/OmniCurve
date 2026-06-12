@@ -309,43 +309,45 @@ All functions use I256 (signed 256-bit integer) with 18-decimal fixed-point (WAD
 
 ## Deployed Addresses (Arbitrum Sepolia)
 
-**Current deployment (stake-weighted-curve contracts — 2026-06-09).** These run the new
-mechanism where bettors move μ/σ and LPs do not. Verified on-chain: a 2 USDC YES bet at
-strike 3000 moved μ 3500 → 3358.17 and σ 800 → 713.62, while an 8 USDC liquidity add left
-μ unchanged.
+**Always derive proxy addresses at runtime via `Factory.getMarketAmm(id)` — never hardcode them.** The factory was re-initialized on 2026-06-12; old market proxy addresses in git history are stale.
 
 ### Implementation Contracts (singletons)
 | Contract | Address |
 |----------|---------|
 | AMM Implementation | `0x0d08e6c457bfe0794b258e66c20a788cc8a8fa32` |
 | Router Implementation | `0x98846991e02802b20bf947cfe11b4ac6ff463d9f` |
-| LP Token Implementation | `0xce5ce25964af3c917ebca5c972abec94022b868a` (reused — unchanged) |
-| Factory | `0xf6bfadc33c3c42755d9634defbfcc52b8b2d5e24` |
+| LP Token Implementation | `0xce5ce25964af3c917ebca5c972abec94022b868a` |
+| Factory | `0x61368ef9e767c8c24de1375b62ed3caafac10b0f` |
 
-### Market #0 Proxies — "What will eth price be by the end of 2026?"
-| Contract | Address |
-|----------|---------|
-| AMM Proxy | `0x9736E98CA898Bf69daA126e715Eb639D2DaBFb46` |
-| Router Proxy | `0xA65b5453a177d3C34654Ec4Be60754d0aD7ec6A5` |
-| LP Token Proxy | `0x731489Ab2A0029a22a95b5Ea3f72335b18D40CCf` |
+### Live Markets (as of 2026-06-12)
+| Market | AMM Proxy | Router Proxy | LP Token Proxy |
+|--------|-----------|--------------|----------------|
+| #0 "What will eth price be by the end of 2026?" | `0xfAE168427cA76FCE47ce5ACC59c8AF44Ff93b231` | `0xD1e1d1F6C90ADAA13177f371afDba06d90a41Ba4` | `0x42361261b5a2DF961Ee5728C2A15A970BBFd85F3` |
+| #1 (title set via PATCH /api/markets/1/metadata) | `0x7277f7008154d9a907bD8695f9A780D0F6D7958C` | `0x8eb3327417aC5035827Ad41CBc91769ee2c38336` | `0x99691cEbA7b40C5C3b9029ad37e059F137c4f303` |
 
-**Owner (AMM + Router + Factory):** `0xE958DaE545e5dAd0b4bE2E58432298dfd5178342`
-**Market #0 state:** μ≈3358, σ≈714, prior_weight=5 WAD, ~8 USDC liquidity, `trades_started=true`.
-
-### Previous deployment (frozen-curve, superseded)
-| Contract | Address |
-|----------|---------|
-| Old Factory | `0xfd6df452d106c6bf5ee1cf6749d4d0afbacf40d9` |
-| Old AMM Impl | `0xbb3f4468928bc97e50c78c19688554a838d18906` |
-| Old Router Impl | `0xae756b1e3d2eb887758f47545d91fdda8604677e` |
-| Old Market #0 AMM Proxy | `0xB817743dB6919599977dF86942d50355FA34dAA1` |
-| Old Market #0 Router Proxy | `0x093299B9F0A8cd57319e3A3611BA867b9B5b1323` |
-| USDC (unchanged) | `0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d` |
+**Creator wallet (MetaMask):** `0x747b0215e8fe4bd67062bcab5dc031eedbdfb70f`
+**Factory deployer:** `0x2154E13EC2399ebd6e81f9900389396Cfa760f98`
+**Both markets:** unseeded at creation (μ=0, σ=0, `sigma_min`=500 WAD). Creator must seed via the LP deposit flow before trading can begin.
 
 ### Goldsky Subgraph
 - Endpoint: `https://api.goldsky.com/api/public/project_cmq17mffxi3ym01zj0wsd8eib/subgraphs/omnicurve-amm-arbitrum-sepolia/1.0.2/gn`
-- Indexes: CurveUpdated events from AMM, TradeExecuted events from Router
-- ⚠️ Still points to the **old** pre-redeploy addresses — re-deploy the subgraph against the new factory/proxies to index the live market.
+- ⚠️ Still points to old pre-redeploy proxy addresses — subgraph must be re-deployed to index the live markets.
+
+### Deployed Contract Gotchas
+
+These apply to the current live AMM implementation and are not obvious from the ABI:
+
+1. **No `sigmaMin()` getter** — the function exists in source but is not exported in the deployed binary. Read `sigma_min` from raw storage slot `0x4` instead. Storage layout: `0` owner, `1` pending_owner, `2` global_mu, `3` global_sigma, `4` sigma_min.
+
+2. **No `pendingOwner()` getter** — read raw storage slot `0x1`.
+
+3. **Factory uses two-step ownership transfer** — `create_market` calls `transferOwnership(creator)` on the AMM and Router proxies, but the creator becomes `pending_owner`, not `owner`, until they call `acceptOwnership()` on each. Until then `setDistribution` reverts with `Unauthorized`. The LP deposit flow handles this automatically.
+
+4. **`addLiquidity` μ/σ args are silently ignored** — the current implementation is curve-neutral; the `target_mu`/`target_sigma` parameters are accepted for ABI compat but do nothing. Seeding requires a separate `setDistribution(mu, sigma)` call by the owner.
+
+5. **Stylus reverts are raw UTF-8 bytes**, not ABI-encoded `Error(string)`. `0x55736463` = "Usdc" (prefix of "UsdcTransferFailed"), etc. The frontend's `extractStylusRevertReason` in `errors.ts` decodes these.
+
+6. **`availableLiquidity()` view reverts on deployed proxies** — use the AMM's USDC token balance (`IERC20.balanceOf(ammProxy)`) as the authoritative liquidity figure instead.
 
 ---
 
@@ -363,6 +365,7 @@ Single TypeScript stack — Express 5 + Socket.io + Prisma + viem.
 | GET | `/api/health` | Server liveness check |
 | GET | `/api/markets` | List all markets (`?category=&active=`) |
 | GET | `/api/markets/:id` | Market detail + positions |
+| PATCH | `/api/markets/:id/metadata` | Set off-chain title + category (called after createMarket) |
 | GET | `/api/markets/:id/price?x=&direction=` | Price preview: `{pYes, pNo, grossCostWad, feeCostWad}` |
 | GET | `/api/markets/:id/lp-stats?address=` | LP balance, accFeePerShare, pending rewards |
 | POST | `/api/markets/:id/settle` | Owner-only: returns `winning_token_id` (no chain tx) |
@@ -377,7 +380,7 @@ See `SOCKET_EVENTS.md` for the full reference. Key events:
 - Server broadcasts `marketStateUpdated` and `marketResolved` to the market room on every chain event
 
 ### Services
-- **`chainService.ts`** — viem `createPublicClient` on arbitrum-sepolia; `getMarketState()`, `getLpTokenBalance()`, `computePendingRewards()`; `startChainWatcher()` watches `CurveUpdated`, `LiquidityAdded/Removed`, `TradeExecuted`, `MarketResolved` — updates Prisma and broadcasts Socket.io on each event
+- **`chainService.ts`** — viem `createPublicClient` on arbitrum-sepolia; `getMarketState()`, `getLpTokenBalance()`, `computePendingRewards()`, `getSigmaMin()` (falls back to raw storage slot `0x4` when the getter reverts); `startChainWatcher()` watches `CurveUpdated`, `LiquidityAdded/Removed`, `TradeExecuted`, `MarketResolved` — updates Prisma and broadcasts Socket.io on each event
 - **`indexerService.ts`** — Goldsky webhook event handlers; idempotency guard prevents double-counting on retries
 - **`mathService.ts`** — `calculatePricePreview(x, direction, mu, sigma, stakeAmount?)` via jStat; includes 1% fee breakdown
 
@@ -399,7 +402,7 @@ Position: positionId (PK), userAddress (FK), marketId (FK), targetValueX,
 ## Known Issues & Gaps
 
 ### Critical/High Priority
-1. **`claim_fees` bug**: Sends WAD amount as USDC (missing `/1e12` conversion) — fees are permanently locked
+1. **`claim_fees` bug**: Sends WAD amount as USDC (missing `/1e12` conversion) — fees are permanently locked *(fixed in H5 in the contract source but the deployed binary predates that fix — check before using)*
 2. **`I256::into_raw()` on negative values**: Produces garbage U256 — affects event emissions and sweep_dust edge case
 3. **No slippage protection**: Trades have no max cost parameter
 
@@ -407,12 +410,14 @@ Position: positionId (PK), userAddress (FK), marketId (FK), targetValueX,
 4. **Two ABI directories**: `types/abis/` (root, PascalCase) and `packages/types/abis/` (canonical, snake/camel). Now synced to the same contents; the canonical one is what the frontend imports
 5. **1% fee hardcoded**: No governance or per-market configuration
 6. **`execute_settlement` is dead code**: Does nothing, misleading for integrators
+7. **Market title not stored on-chain**: The factory emits only a numeric `market_id`. Titles are stored in the DB via `PATCH /api/markets/:id/metadata`, called by the frontend after `createMarket` confirms. If the backend is unreachable at that moment the title stays as "Market #N" and must be patched manually: `curl -X PATCH http://localhost:3001/api/markets/:id/metadata -d '{"title":"..."}'`.
 
 ### Not Yet Built
 - **docker-compose.yml**: Mentioned in DEVELOPER_CONTEXT.md but not created
 - **Integration tests**: No end-to-end tests across contract interactions
 - **Oracle integration**: Resolution is fully manual (owner calls `set_final_price`). The frontend's ETH spot line (`useEthPrice` → Coinbase API) is display-only and does not feed settlement
 - **Position transfers**: Positions are non-transferable
+- **`acceptOwnership` for Router**: The LP deposit flow accepts ownership of the AMM and calls `setDistribution`, but does **not** accept ownership of the Router proxy. If the creator also needs Router-owner actions (e.g. `set_final_price`), they must call `Router.acceptOwnership()` separately.
 
 ---
 

@@ -118,7 +118,7 @@ export default function Landing() {
           >
             {[
               { value: markets?.length ?? 0,                    label: 'Markets'  },
-              { value: `$${(totalLiquidity / 1e6).toFixed(0)}`, label: 'TVL'      },
+              { value: `$${totalLiquidity.toFixed(2)}`,           label: 'TVL'      },
               { value: resolvedCount,                            label: 'Resolved' },
             ].map(({ value, label }) => (
               <div key={label} className="text-center">

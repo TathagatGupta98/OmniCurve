@@ -55,6 +55,14 @@ export function StakerPanel({ market, onStrikeChange }: StakerPanelProps) {
   const netStake = stake - feeCost
   const tokensOut = prob > 0 ? netStake / prob : 0
 
+  // The AMM locks the bet's worst-case payout (each token redeems for $1, the
+  // net stake is already in the pot) and reverts with AmmCallFailed when that
+  // exceeds the pool's liquidity. Catch it here so the bet is never sent.
+  const liability = tokensOut > 0 ? tokensOut - netStake : 0
+  const probTooSmall = stake > 0 && prob < 0.001
+  const exceedsPool = stake > 0 && liability > market.totalLiquidity
+  const cannotUnderwrite = probTooSmall || exceedsPool
+
   const handleStrikeChange = (v: number) => {
     setStrikeX(v)
     onStrikeChange?.(v)
@@ -227,6 +235,15 @@ export function StakerPanel({ market, onStrikeChange }: StakerPanelProps) {
         </div>
       )}
 
+      {/* ── Underwriting guard ───────────────────────────────── */}
+      {cannotUnderwrite && (
+        <p className="text-xs font-mono rounded-lg p-3 border text-[#B42318] bg-[rgba(180,35,24,0.07)] border-[rgba(180,35,24,0.18)]">
+          {probTooSmall
+            ? `P(${direction.toUpperCase()}) is ≈0 at this strike — the price rounds to zero on-chain. Move the strike closer to μ (${mu.toLocaleString()}).`
+            : `The pool can't underwrite this bet: its worst-case payout is $${liability.toFixed(2)}, but the pool only holds $${market.totalLiquidity.toFixed(2)}. Lower your stake or move the strike closer to μ.`}
+        </p>
+      )}
+
       {/* ── Error ────────────────────────────────────────────── */}
       {error && (
         <p
@@ -277,7 +294,7 @@ export function StakerPanel({ market, onStrikeChange }: StakerPanelProps) {
             variant={direction === 'yes' ? 'ghost' : 'danger'}
             className={`w-full ${direction === 'yes' ? 'border-[#0B7A52] text-[#0B7A52] hover:bg-[rgba(11,122,82,0.08)]' : ''}`}
             loading={isWorking}
-            disabled={!stake || isWorking}
+            disabled={!stake || isWorking || cannotUnderwrite}
             onClick={handleExecute}
           >
             {step === 'approving'

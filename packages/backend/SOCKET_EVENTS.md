@@ -82,6 +82,42 @@ Broadcast to all sockets in a market's room when the AMM emits a `MarketResolved
 
 ---
 
+### `marketsChanged`
+
+Broadcast to **all connected sockets** (no room required) whenever any market's
+state changes on-chain — a market is created, a stake is placed, or liquidity is
+added/removed — after the backend has updated the DB. Intended as a refetch
+signal for list views (marketplace, dashboard): invalidate your `markets` /
+`market` / `portfolio` queries when this fires.
+
+**Targets:** All connected sockets
+**Triggers:** `MarketCreated` (Factory), `CurveUpdated`, `LiquidityAdded`, `LiquidityRemoved` (AMM), `TradeExecuted` (Router), and Goldsky webhook events
+
+```ts
+{
+  marketId: string,  // the market that changed
+}
+```
+
+---
+
+### `marketCreated`
+
+Broadcast to **all connected sockets** when the Factory emits `MarketCreated`
+and the new market has been inserted into the DB (also accompanied by a
+`marketsChanged` emit).
+
+**Targets:** All connected sockets
+**Triggers:** `MarketCreated` chain event on the Factory
+
+```ts
+{
+  marketId: string,  // id of the newly created market
+}
+```
+
+---
+
 ### `priceUpdate`
 
 Response to a `requestPrice` event. Sent only to the requesting socket.
