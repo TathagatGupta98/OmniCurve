@@ -13,7 +13,7 @@
 | AMM Implementation | `0x0d08e6c457bfe0794b258e66c20a788cc8a8fa32` |
 | Router Implementation | `0x98846991e02802b20bf947cfe11b4ac6ff463d9f` |
 | LP Token Implementation | `0xce5ce25964af3c917ebca5c972abec94022b868a` (reused — unchanged) |
-| Factory | `0xf6bfadc33c3c42755d9634defbfcc52b8b2d5e24` |
+| Factory | `0x61368ef9e767c8c24de1375b62ed3caafac10b0f` |
 
 ### Market #0 Proxy Contracts (deployed by factory) — "What will eth price be by the end of 2026?"
 

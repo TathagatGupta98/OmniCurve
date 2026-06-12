@@ -152,7 +152,7 @@ Run `pnpm --filter @omnicurve/frontend dev` — verify blank app loads.
 ### `src/config/contracts.ts`
 
 ```ts
-export const FACTORY_ADDRESS = "0x1bbdb700863309ab2588c9d64786bd0ac376d150"
+export const FACTORY_ADDRESS = "0x61368ef9e767c8c24de1375b62ed3caafac10b0f"
 export const USDC_ADDRESS    = "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d"
 export const CHAIN_ID        = 421614 // arbitrum sepolia
 
@@ -582,7 +582,7 @@ Both must happen in the same wallet session before or separately from the first 
 
 ```
 VITE_API_BASE_URL=http://localhost:3001
-VITE_FACTORY_ADDRESS=0x1bbdb700863309ab2588c9d64786bd0ac376d150
+VITE_FACTORY_ADDRESS=0x61368ef9e767c8c24de1375b62ed3caafac10b0f
 VITE_USDC_ADDRESS=0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d
 VITE_WALLETCONNECT_PROJECT_ID=<your-id>
 ```

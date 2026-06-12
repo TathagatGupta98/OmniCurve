@@ -36,7 +36,7 @@ export default function PageWrapper() {
               isDark ? 'text-[rgba(242,242,242,0.55)]' : 'text-[rgba(35,24,18,0.50)]'
             }`}>
               <a
-                href="https://sepolia.arbiscan.io/address/0x1bbdb700863309ab2588c9d64786bd0ac376d150"
+                href="https://sepolia.arbiscan.io/address/0x61368ef9e767c8c24de1375b62ed3caafac10b0f"
                 target="_blank"
                 rel="noreferrer"
                 className={`transition-colors duration-200 ${

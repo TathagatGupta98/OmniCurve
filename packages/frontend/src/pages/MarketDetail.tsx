@@ -4,7 +4,7 @@ import { useAccount, useWriteContract, usePublicClient } from 'wagmi'
 import { useMarket } from '@/hooks/useMarket'
 import { useMarketSocket } from '@/hooks/useMarketSocket'
 import { usePortfolio } from '@/hooks/usePortfolio'
-import { useEthPrice } from '@/hooks/useEthPrice'
+import { useSpotPrice, detectSpotSymbol } from '@/hooks/useSpotPrice'
 import { useTheme } from '@/hooks/useTheme'
 import { GaussianChart } from '@/components/market/GaussianChart'
 import { StakerPanel } from '@/components/market/StakerPanel'
@@ -88,7 +88,8 @@ export default function MarketDetail() {
   const { data: market, isLoading, error } = useMarket(marketId)
   const { liveState, isResolved: socketResolved, winningTokenId } = useMarketSocket(marketId)
   const { data: portfolio } = usePortfolio(address)
-  const { ethUsd } = useEthPrice()
+  const spotSymbol = detectSpotSymbol(market?.title)
+  const { spotUsd } = useSpotPrice(spotSymbol)
   const [activeTab, setActiveTab] = useState('trade')
   const [strikeX, setStrikeX] = useState<number | undefined>()
   const { writeContractAsync } = useWriteContract()
@@ -332,8 +333,8 @@ export default function MarketDetail() {
               strikeX={strikeX}
               liquidity={liquidity}
               height={320}
-              {...(String(market.marketId) === '0'
-                ? { spotX: ethUsd, spotLabel: `ETH $${ethUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}` }
+              {...(spotSymbol && spotUsd !== undefined
+                ? { spotX: spotUsd, spotLabel: `${spotSymbol} $${spotUsd.toLocaleString(undefined, { maximumFractionDigits: 0 })}` }
                 : {})}
             />
             <p className={`text-[11px] font-mono mt-4 leading-relaxed transition-colors duration-300 ${T.statLabel}`}>

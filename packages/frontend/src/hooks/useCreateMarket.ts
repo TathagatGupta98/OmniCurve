@@ -69,7 +69,22 @@ export function useCreateMarket() {
               eventName: 'MarketCreated',
             }) as unknown as { args: { market_id: bigint } }[]
             if (created) {
-              await api.updateMarketMetadata(created.args.market_id.toString(), meta)
+              const marketId = created.args.market_id.toString()
+              // Retry a few times: the backend may briefly be busy (or its chain
+              // watcher mid-upsert) right after the tx confirms, and a lost PATCH
+              // leaves the market as "Market #N" forever.
+              let lastErr: unknown
+              for (let attempt = 0; attempt < 3; attempt++) {
+                try {
+                  await api.updateMarketMetadata(marketId, meta)
+                  lastErr = undefined
+                  break
+                } catch (err) {
+                  lastErr = err
+                  await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)))
+                }
+              }
+              if (lastErr) throw lastErr
             }
           } catch (metaErr) {
             // Metadata is cosmetic — never fail the creation flow over it.

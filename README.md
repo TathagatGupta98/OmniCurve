@@ -25,7 +25,7 @@ The core of **OmniCurve** translates the continuous Gaussian distribution into a
 
 ## Addresses and the Transaction Hashes
 
-`Factory deployed at:` [0xf6bfadc33c3c42755d9634defbfcc52b8b2d5e24](https://sepolia.arbiscan.io/address/0xf6bfadc33c3c42755d9634defbfcc52b8b2d5e24)
+`Factory deployed at:` [0x61368ef9e767c8c24de1375b62ed3caafac10b0f](https://sepolia.arbiscan.io/address/0x61368ef9e767c8c24de1375b62ed3caafac10b0f)
 
 `AMM Implementation:` [0x0d08e6c457bfe0794b258e66c20a788cc8a8fa32](https://sepolia.arbiscan.io/address/0x0d08e6c457bfe0794b258e66c20a788cc8a8fa32)
 
@@ -876,7 +876,7 @@ cast send <AMM_PROXY> "setDistribution(int256,int256)" <MU_WAD> <SIGMA_WAD> \
 | AMM Implementation | `0x0d08e6c457bfe0794b258e66c20a788cc8a8fa32` |
 | Router Implementation | `0x98846991e02802b20bf947cfe11b4ac6ff463d9f` |
 | LP Token Implementation | `0xce5ce25964af3c917ebca5c972abec94022b868a` |
-| Factory | `0xf6bfadc33c3c42755d9634defbfcc52b8b2d5e24` |
+| Factory | `0x61368ef9e767c8c24de1375b62ed3caafac10b0f` |
 | Market #0 AMM Proxy | `0x9736E98CA898Bf69daA126e715Eb639D2DaBFb46` |
 | Market #0 Router Proxy | `0xA65b5453a177d3C34654Ec4Be60754d0aD7ec6A5` |
 | Market #0 LP Token Proxy | `0x731489Ab2A0029a22a95b5Ea3f72335b18D40CCf` |
