@@ -100,7 +100,7 @@ export function MarketCard({ market }: MarketCardProps) {
 
           {/* Category */}
           <div
-            className="mt-3 pt-3 flex items-center justify-between"
+            className="mt-3 pt-3 flex items-center"
             style={{ borderTop: '1px solid var(--border-dim)' }}
           >
             <span
@@ -108,12 +108,6 @@ export function MarketCard({ market }: MarketCardProps) {
               style={{ color: 'var(--text-subtle)' }}
             >
               {market.category}
-            </span>
-            <span
-              className="text-[10px] font-mono"
-              style={{ color: 'var(--text-subtle)' }}
-            >
-              #{market.marketId}
             </span>
           </div>
         </div>
