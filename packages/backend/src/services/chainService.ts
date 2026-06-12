@@ -12,7 +12,6 @@ import { config } from '../config';
 import prisma from '../models/db';
 import { ammAbi, routerAbi, lpTokenAbi, factoryAbi } from '../db/abis';
 import { broadcastMarketUpdate, broadcastMarketResolved, broadcastMarketCreated } from '../sockets/socketManager';
-import { consumeMetadata } from './metadataReservationService';
 import { calculateExpectedPrices } from './mathService';
 
 // ─── Shared viem client ──────────────────────────────────────────────────────
@@ -467,7 +466,6 @@ async function handleMarketCreatedOnChain(
   ammAddress: string,
   routerAddress: string,
   lpTokenAddress: string,
-  creatorAddress?: string,
 ): Promise<void> {
   if (config.EXCLUDED_MARKET_IDS.includes(marketId)) {
     console.log(`🚫 Market ${marketId} is excluded (EXCLUDED_MARKET_IDS) — ignoring MarketCreated`);
@@ -490,28 +488,13 @@ async function handleMarketCreatedOnChain(
   }
   minVarianceBound = await getSigmaMin(ammAddress);
 
-  // The creator may have announced the market's question before sending the
-  // tx (POST /api/markets/metadata-reservation) — apply it here so the title
-  // is correct even if the frontend's post-create PATCH never arrives.
-  const reserved = creatorAddress ? consumeMetadata(creatorAddress) : undefined;
-  const reservedMeta = reserved
-    ? { title: reserved.title, ...(reserved.category ? { category: reserved.category } : {}) }
-    : undefined;
-  if (reservedMeta) {
-    console.log(`📝 Applying reserved question for market ${marketId}: "${reservedMeta.title}"`);
-  }
-
   await prisma.market.upsert({
     where: { marketId },
-    update: {
-      ammAddress, routerAddress, lpTokenAddress, currentMu, currentSigma, totalLiquidity, minVarianceBound,
-      ...(reservedMeta ?? {}),
-    },
+    update: { ammAddress, routerAddress, lpTokenAddress, currentMu, currentSigma, totalLiquidity, minVarianceBound },
     create: {
       marketId,
       title: `Market #${marketId}`,
       category: 'general',
-      ...(reservedMeta ?? {}),
       currentMu,
       currentSigma,
       totalLiquidity,
@@ -619,16 +602,7 @@ export async function startChainWatcher(): Promise<WatchContractEventReturnType[
               router: string;
               lp_token: string;
             };
-            // Resolve the creator (tx sender) so any question they reserved
-            // before sending the tx can be applied to the new market row.
-            let creator: string | undefined;
-            try {
-              const tx = await publicClient.getTransaction({ hash: log.transactionHash });
-              creator = tx.from;
-            } catch (err) {
-              console.warn('⚠️  Could not resolve creator for MarketCreated tx:', err);
-            }
-            await handleMarketCreatedOnChain(market_id.toString(), amm, router, lp_token, creator);
+            await handleMarketCreatedOnChain(market_id.toString(), amm, router, lp_token);
           } catch (err) {
             console.error('❌ MarketCreated handler error:', err);
           }

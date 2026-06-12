@@ -1,8 +1,6 @@
 import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useAccount, useWriteContract, usePublicClient } from 'wagmi'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { api } from '@/lib/api'
 import { useMarket } from '@/hooks/useMarket'
 import { useMarketSocket } from '@/hooks/useMarketSocket'
 import { usePortfolio } from '@/hooks/usePortfolio'
@@ -14,7 +12,6 @@ import { LPPanel } from '@/components/market/LPPanel'
 import { Tabs } from '@/components/ui/Tabs'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
-import { Input } from '@/components/ui/Input'
 import { shortAddr, floatToWad } from '@/lib/math'
 import { getGasFees, estimateGasLimit } from '@/lib/gas'
 import { AMM_ABI, ROUTER_ABI } from '@/config/contracts'
@@ -94,30 +91,8 @@ export default function MarketDetail() {
   const { ethUsd } = useEthPrice()
   const [activeTab, setActiveTab] = useState('trade')
   const [strikeX, setStrikeX] = useState<number | undefined>()
-  const [questionDraft, setQuestionDraft] = useState('')
-  const [savingQuestion, setSavingQuestion] = useState(false)
   const { writeContractAsync } = useWriteContract()
   const publicClient = usePublicClient()
-  const queryClient = useQueryClient()
-
-  // The backend doesn't return ownerAddress, so resolve ownership from the AMM
-  // proxy itself. Factory creation uses a two-step transfer: until the creator
-  // calls acceptOwnership(), they are only pending_owner (raw slot 0x1 — the
-  // deployed binary exports no getter), so check both.
-  const { data: onchainOwners } = useQuery({
-    queryKey: ['amm-owners', market?.ammAddress],
-    enabled: !!market?.ammAddress && !market?.ownerAddress && !!publicClient,
-    staleTime: 60_000,
-    queryFn: async () => {
-      const amm = market!.ammAddress as `0x${string}`
-      const [owner, pendingSlot] = await Promise.all([
-        publicClient!.readContract({ address: amm, abi: AMM_ABI, functionName: 'owner' }) as Promise<string>,
-        publicClient!.getStorageAt({ address: amm, slot: '0x1' }),
-      ])
-      const pendingOwner = pendingSlot ? `0x${pendingSlot.slice(-40)}` : undefined
-      return { owner, pendingOwner }
-    },
-  })
 
   if (isLoading) {
     return (
@@ -142,31 +117,8 @@ export default function MarketDetail() {
   const liquidity = Math.max(0, liveState?.totalLiquidity ?? market.totalLiquidity)
   const resolved = socketResolved || market.isResolved
   const winId = winningTokenId ?? (market.winningTokenId ? String(market.winningTokenId) : null)
-  const ownerCandidates = [
-    market.ownerAddress,
-    onchainOwners?.owner,
-    onchainOwners?.pendingOwner,
-  ].filter((a): a is string => !!a)
-  const isOwner = !!address &&
-    ownerCandidates.some((a) => a.toLowerCase() === address.toLowerCase())
-  // The question is stored off-chain after createMarket; if that save failed,
-  // the market is stuck with the watcher's "Market #N" placeholder.
-  const hasPlaceholderTitle = /^Market #\d+$/.test(market.title)
-
-  const handleSaveQuestion = async () => {
-    const title = questionDraft.trim()
-    if (title.length < 4) return
-    setSavingQuestion(true)
-    try {
-      await api.updateMarketMetadata(String(market.marketId), { title })
-      queryClient.invalidateQueries({ queryKey: ['market', marketId] })
-      queryClient.invalidateQueries({ queryKey: ['markets'] })
-    } catch (err) {
-      console.error('[MarketDetail] could not save question:', err)
-    } finally {
-      setSavingQuestion(false)
-    }
-  }
+  const isOwner = !!address && !!market.ownerAddress &&
+    address.toLowerCase() === market.ownerAddress.toLowerCase()
 
   const handleProposeResolution = async (winningId: number) => {
     const gasFees = await getGasFees(publicClient)
@@ -266,34 +218,6 @@ export default function MarketDetail() {
         <h1 className={`font-display font-700 text-3xl sm:text-4xl tracking-tight leading-tight transition-colors duration-300 ${T.heading}`}>
           {market.title}
         </h1>
-        {hasPlaceholderTitle && isOwner && (
-          <div className={`border rounded-xl p-4 space-y-3 transition-colors duration-300 ${T.ownerBox}`}>
-            <p className={`text-xs font-display tracking-widest uppercase transition-colors duration-300 ${T.ownerLabel}`}>
-              Set the market question
-            </p>
-            <p className={`text-xs font-mono transition-colors duration-300 ${T.statLabel}`}>
-              This market's question was never saved — it currently shows as a placeholder.
-            </p>
-            <div className="flex gap-2 flex-wrap">
-              <div className="flex-1 min-w-[240px]">
-                <Input
-                  value={questionDraft}
-                  onChange={(e) => setQuestionDraft(e.target.value)}
-                  placeholder="e.g. What will ETH price be by the end of 2026?"
-                />
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                loading={savingQuestion}
-                disabled={questionDraft.trim().length < 4}
-                onClick={handleSaveQuestion}
-              >
-                Save Question
-              </Button>
-            </div>
-          </div>
-        )}
       </div>
 
       {/* ── Stats strip ────────────────────────────────────────────── */}

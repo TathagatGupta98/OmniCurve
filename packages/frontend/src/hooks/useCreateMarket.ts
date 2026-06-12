@@ -5,7 +5,6 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { FACTORY_ADDRESS, FACTORY_ABI, USDC_ADDRESS } from '@/config/contracts'
 import { api } from '@/lib/api'
-import { savePendingMeta, updatePendingMeta, removePendingMeta } from '@/lib/pendingMeta'
 import { floatToWad } from '@/lib/math'
 import { estimateGasLimit, getGasFees } from '@/lib/gas'
 
@@ -27,16 +26,6 @@ export function useCreateMarket() {
       setError(undefined)
       try {
         setStep('submitting')
-        // Reserve the question server-side before the tx: the backend's chain
-        // watcher applies it on MarketCreated, so the title is stored even if
-        // this browser flow dies after submission (RPC timeout, closed tab).
-        if (meta?.title && address) {
-          try {
-            await api.reserveMarketMetadata(address, meta)
-          } catch (reserveErr) {
-            console.warn('[createMarket] could not reserve market title:', reserveErr)
-          }
-        }
         const sigmaMinWad = floatToWad(sigmaMin)
         const gasFees = await getGasFees(publicClient)
         // createMarket deploys 3 proxies + wiring — heavy, and MetaMask can't estimate
@@ -63,10 +52,6 @@ export function useCreateMarket() {
           gas,
         })
         setTxHash(tx)
-        // Persist the question locally before anything else can fail, so a
-        // failed metadata PATCH can be replayed on the next markets-page load
-        // instead of leaving the market as "Market #N" forever.
-        if (meta?.title) savePendingMeta({ txHash: tx, ...meta })
         // Wait for on-chain confirmation before marking done — catches reverts
         const receipt = await publicClient!.waitForTransactionReceipt({ hash: tx })
         if (receipt.status === 'reverted') {
@@ -84,16 +69,11 @@ export function useCreateMarket() {
               eventName: 'MarketCreated',
             }) as unknown as { args: { market_id: bigint } }[]
             if (created) {
-              const marketId = created.args.market_id.toString()
-              updatePendingMeta(tx, { marketId })
-              await api.updateMarketMetadata(marketId, meta)
-              removePendingMeta(tx)
+              await api.updateMarketMetadata(created.args.market_id.toString(), meta)
             }
           } catch (metaErr) {
             // Metadata is cosmetic — never fail the creation flow over it.
-            // The pendingMeta entry stays behind and is replayed on the next
-            // markets-page load, so the question still reaches the backend.
-            console.warn('[createMarket] could not store market title (will retry on next load):', metaErr)
+            console.warn('[createMarket] could not store market title:', metaErr)
           }
         }
 
