@@ -415,3 +415,377 @@ impl BinaryRouter {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use stylus_sdk::testing::*;
+    use alloy_sol_types::{sol as test_sol, SolCall};
+
+    // Local ABI mirror of the AMM / ERC-20 calls the router makes, used only to
+    // construct exact mock calldata. Signatures must match `interfaces.rs` /
+    // `IDistributionAmm` so selectors line up with what the router emits.
+    test_sol! {
+        function globalMu() external view returns (int256);
+        function globalSigma() external view returns (int256);
+        function distributeFee(uint256 fee_amount) external;
+        function underwriteTrade(uint256 token_id, int256 target_x, uint256 premium_wad, uint256 max_liability_wad) external;
+        function payoutWinnings(address user, uint256 token_id, uint256 amount_wad) external;
+        function releaseCollateral(uint256 token_id) external;
+        function transferFrom(address from, address to, uint256 amount) external returns (bool);
+    }
+
+    fn addr(n: u8) -> Address { Address::from([n; 20]) }
+    fn enc_word(bytes: [u8; 32]) -> Vec<u8> { bytes.to_vec() }
+    fn enc_i256(v: I256) -> Vec<u8> { enc_word(v.to_be_bytes::<32>()) }
+    fn enc_bool(b: bool) -> Vec<u8> { let mut w = [0u8; 32]; if b { w[31] = 1; } w.to_vec() }
+
+    const AMM: u8 = 0xAA;
+    const USDC: u8 = 0xCC;
+
+    /// Initialized router wired to mock AMM + USDC, owned by `owner`.
+    fn setup(vm: &TestVM, owner: Address) -> BinaryRouter {
+        let mut router = BinaryRouter::from(vm);
+        vm.set_sender(owner);
+        router.initialize(owner).unwrap();
+        router.set_amm_address(addr(AMM)).unwrap();
+        router.set_usdc_token(addr(USDC)).unwrap();
+        router
+    }
+
+    // ── Init / ownership / config ─────────────────────────────────────
+
+    #[test]
+    fn initialize_twice_reverts() {
+        let vm = TestVM::default();
+        let mut router = setup(&vm, addr(1));
+        assert_eq!(router.initialize(addr(2)).unwrap_err(), b"Already initialized".to_vec());
+    }
+
+    #[test]
+    fn config_setters_are_owner_only() {
+        let vm = TestVM::default();
+        let mut router = setup(&vm, addr(1));
+        vm.set_sender(addr(9));
+        assert_eq!(router.set_amm_address(addr(2)).unwrap_err(), b"Unauthorized".to_vec());
+        assert_eq!(router.set_usdc_token(addr(2)).unwrap_err(), b"Unauthorized".to_vec());
+        assert_eq!(router.set_market_id(U256::from(1u8)).unwrap_err(), b"Unauthorized".to_vec());
+    }
+
+    #[test]
+    fn ownership_transfer_is_two_step() {
+        let vm = TestVM::default();
+        let mut router = setup(&vm, addr(1));
+        vm.set_sender(addr(1));
+        router.transfer_ownership(addr(2)).unwrap();
+        // Not yet effective.
+        vm.set_sender(addr(2));
+        assert_eq!(router.set_amm_address(addr(3)).unwrap_err(), b"Unauthorized".to_vec());
+        router.accept_ownership().unwrap();
+        // Now effective.
+        router.set_amm_address(addr(3)).unwrap();
+        assert_eq!(router.get_amm_address().unwrap(), addr(3));
+    }
+
+    #[test]
+    fn market_id_roundtrips() {
+        let vm = TestVM::default();
+        let mut router = setup(&vm, addr(1));
+        vm.set_sender(addr(1));
+        router.set_market_id(U256::from(42u64)).unwrap();
+        assert_eq!(router.get_market_id().unwrap(), U256::from(42u64));
+    }
+
+    // ── token_id derivation ───────────────────────────────────────────
+
+    #[test]
+    fn token_id_is_deterministic_and_distinct() {
+        let vm = TestVM::default();
+        let router = setup(&vm, addr(1));
+        let x = I256::try_from(1234i64).unwrap();
+        let yes = router.compute_token_id(x, true).unwrap();
+        let yes_again = router.compute_token_id(x, true).unwrap();
+        let no = router.compute_token_id(x, false).unwrap();
+        let other_x = router.compute_token_id(I256::try_from(1235i64).unwrap(), true).unwrap();
+        assert_eq!(yes, yes_again, "same inputs → same id");
+        assert_ne!(yes, no, "direction changes id");
+        assert_ne!(yes, other_x, "strike changes id");
+    }
+
+    #[test]
+    fn token_id_depends_on_market_id() {
+        let vm = TestVM::default();
+        let mut router = setup(&vm, addr(1));
+        let x = I256::try_from(1234i64).unwrap();
+        vm.set_sender(addr(1));
+        router.set_market_id(U256::from(0u8)).unwrap();
+        let id0 = router.compute_token_id(x, true).unwrap();
+        router.set_market_id(U256::from(1u8)).unwrap();
+        let id1 = router.compute_token_id(x, true).unwrap();
+        assert_ne!(id0, id1, "market_id is part of the id preimage");
+    }
+
+    // ── ERC-1155 surface ──────────────────────────────────────────────
+
+    #[test]
+    fn supports_interface_erc1155_and_erc165() {
+        let vm = TestVM::default();
+        let router = setup(&vm, addr(1));
+        assert!(router.supports_interface(FixedBytes::from([0xd9, 0xb6, 0x7a, 0x26])).unwrap());
+        assert!(router.supports_interface(FixedBytes::from([0x01, 0xff, 0xc9, 0xa7])).unwrap());
+        assert!(!router.supports_interface(FixedBytes::from([0x12, 0x34, 0x56, 0x78])).unwrap());
+    }
+
+    #[test]
+    fn approval_for_all_and_self_approval_guard() {
+        let vm = TestVM::default();
+        let mut router = setup(&vm, addr(1));
+        let owner = addr(5);
+        let op = addr(6);
+        vm.set_sender(owner);
+        assert_eq!(router.set_approval_for_all(owner, true).unwrap_err(), b"Self approval".to_vec());
+        router.set_approval_for_all(op, true).unwrap();
+        assert!(router.is_approved_for_all(owner, op).unwrap());
+        router.set_approval_for_all(op, false).unwrap();
+        assert!(!router.is_approved_for_all(owner, op).unwrap());
+    }
+
+    #[test]
+    fn balance_of_batch_length_mismatch_reverts() {
+        let vm = TestVM::default();
+        let router = setup(&vm, addr(1));
+        let accounts = alloc::vec![addr(1), addr(2)];
+        let ids = alloc::vec![U256::ZERO];
+        assert_eq!(router.balance_of_batch(accounts, ids).unwrap_err(), b"Length mismatch".to_vec());
+    }
+
+    #[test]
+    fn safe_transfer_from_validations() {
+        let vm = TestVM::default();
+        let mut router = setup(&vm, addr(1));
+        let from = addr(5);
+        let to = addr(6);
+        let id = U256::from(1u8);
+
+        // to == zero
+        vm.set_sender(from);
+        assert_eq!(
+            router.safe_transfer_from(from, Address::ZERO, id, U256::from(1u8), alloc::vec![]).unwrap_err(),
+            b"TransferToZeroAddress".to_vec()
+        );
+
+        // not owner / not approved operator
+        vm.set_sender(addr(9));
+        assert_eq!(
+            router.safe_transfer_from(from, to, id, U256::from(1u8), alloc::vec![]).unwrap_err(),
+            b"Unauthorized".to_vec()
+        );
+
+        // insufficient balance (from has none)
+        vm.set_sender(from);
+        assert_eq!(
+            router.safe_transfer_from(from, to, id, U256::from(1u8), alloc::vec![]).unwrap_err(),
+            b"InsufficientBalance".to_vec()
+        );
+    }
+
+    // ── Trade guards (no mocks needed) ────────────────────────────────
+
+    #[test]
+    fn buy_rejects_zero_stake() {
+        let vm = TestVM::default();
+        let mut router = setup(&vm, addr(1));
+        vm.set_sender(addr(5));
+        assert_eq!(router.buy_yes(I256::ZERO, U256::ZERO).unwrap_err(), b"ZeroAmount".to_vec());
+        assert_eq!(router.buy_no(I256::ZERO, U256::ZERO).unwrap_err(), b"ZeroAmount".to_vec());
+    }
+
+    // ── Happy-path trade (mocked AMM + USDC) ──────────────────────────
+    //
+    // TestVM note: all mocked external calls return one shared return-data
+    // buffer (the most-recently registered mock's bytes); the per-mock
+    // (to, calldata) key only decides success-vs-revert. So a single global
+    // buffer must satisfy *every* read in the call path. We set it to the
+    // 32-byte word `1`, which the router reads as μ=σ=1 (wei) for the two
+    // `globalMu`/`globalSigma` views and as `true` for the USDC `transferFrom`.
+    // void calls (distributeFee/underwriteTrade) ignore the buffer. The expected
+    // token amount is derived from the contract's own `math_core`, so the test
+    // asserts the router's bookkeeping (tokens = net_stake/price), not the maths.
+
+    fn wad_i256() -> I256 { I256::try_from(1_000_000_000_000_000_000i128).unwrap() }
+
+    #[test]
+    fn buy_yes_happy_path_mints_tokens() {
+        let vm = TestVM::default();
+        let mut router = setup(&vm, addr(1));
+        let user = addr(5);
+
+        let target = I256::ZERO;
+        let mu = I256::ONE;
+        let sigma = I256::ONE;
+
+        // Expected price/tokens via the contract's own math (yes price = 1 - CDF).
+        let p_no = crate::math_core::normal_cdf(target, mu, sigma);
+        let price_u256 = crate::math_core::safe_to_u256(wad_i256() - p_no);
+        assert!(price_u256 > U256::ZERO);
+
+        let stake_usdc = U256::from(1_000_000u64);              // 1 USDC
+        let stake_wad = stake_usdc * U256::from(1_000_000_000_000u128);
+        let fee_wad = stake_wad / U256::from(100u64);
+        let net_stake_wad = stake_wad - fee_wad;
+        let tokens = (net_stake_wad * U256::from(1_000_000_000_000_000_000u128)) / price_u256;
+        assert!(tokens > U256::ZERO);
+
+        let token_id = router.compute_token_id(target, true).unwrap();
+
+        // Set the shared return buffer to the word `1` (true / μ=σ=1) by making
+        // this the last-registered mock. All other matched mocks succeed too.
+        vm.mock_call(addr(AMM), distributeFeeCall { fee_amount: fee_wad }.abi_encode(), U256::ZERO, Ok(alloc::vec![]));
+        vm.mock_call(
+            addr(AMM),
+            underwriteTradeCall { token_id, target_x: target, premium_wad: net_stake_wad, max_liability_wad: tokens }.abi_encode(),
+            U256::ZERO,
+            Ok(alloc::vec![]),
+        );
+        vm.mock_static_call(addr(AMM), globalMuCall {}.abi_encode(), Ok(enc_i256(mu)));
+        vm.mock_static_call(addr(AMM), globalSigmaCall {}.abi_encode(), Ok(enc_i256(sigma)));
+        vm.mock_call(
+            addr(USDC),
+            transferFromCall { from: user, to: addr(AMM), amount: stake_usdc }.abi_encode(),
+            U256::ZERO,
+            Ok(enc_bool(true)),
+        );
+
+        vm.set_sender(user);
+        router.buy_yes(target, stake_usdc).unwrap();
+
+        // Bookkeeping: the position balance equals net_stake/price.
+        assert_eq!(router.balance_of(user, token_id).unwrap(), tokens);
+        // A second identical buy accumulates into the same position id.
+        router.buy_yes(target, stake_usdc).unwrap();
+        assert_eq!(router.balance_of(user, token_id).unwrap(), tokens + tokens);
+    }
+
+    #[test]
+    fn buy_propagates_usdc_transfer_failure() {
+        let vm = TestVM::default();
+        let mut router = setup(&vm, addr(1));
+        let user = addr(5);
+        let target = I256::ZERO;
+        let stake_usdc = U256::from(1_000_000u64);
+
+        // transferFrom is registered last → shared buffer = false (word 0), which
+        // also makes the μ/σ reads return 0 (σ=0 ⇒ CDF=0 ⇒ yes price = 1 WAD,
+        // nonzero, so the path reaches the transfer). The false result must then
+        // surface as UsdcTransferFailed.
+        vm.mock_static_call(addr(AMM), globalMuCall {}.abi_encode(), Ok(enc_i256(I256::ZERO)));
+        vm.mock_static_call(addr(AMM), globalSigmaCall {}.abi_encode(), Ok(enc_i256(I256::ZERO)));
+        vm.mock_call(
+            addr(USDC),
+            transferFromCall { from: user, to: addr(AMM), amount: stake_usdc }.abi_encode(),
+            U256::ZERO,
+            Ok(enc_bool(false)),
+        );
+
+        vm.set_sender(user);
+        assert_eq!(router.buy_yes(target, stake_usdc).unwrap_err(), b"UsdcTransferFailed".to_vec());
+    }
+
+    // ── Settlement ────────────────────────────────────────────────────
+
+    #[test]
+    fn set_final_price_owner_only_and_single_shot() {
+        let vm = TestVM::default();
+        let mut router = setup(&vm, addr(1));
+        let price = I256::try_from(2000i64).unwrap();
+
+        vm.set_sender(addr(9));
+        assert_eq!(router.set_final_price(price).unwrap_err(), b"Unauthorized".to_vec());
+
+        vm.set_sender(addr(1));
+        router.set_final_price(price).unwrap();
+        assert!(router.is_market_resolved().unwrap());
+        assert_eq!(router.get_final_price().unwrap(), price);
+
+        // Cannot resolve twice.
+        assert_eq!(router.set_final_price(price).unwrap_err(), b"Already resolved".to_vec());
+    }
+
+    #[test]
+    fn claim_winnings_requires_resolution() {
+        let vm = TestVM::default();
+        let mut router = setup(&vm, addr(1));
+        vm.set_sender(addr(5));
+        assert_eq!(router.claim_winnings(I256::ZERO, true).unwrap_err(), b"MarketNotResolved".to_vec());
+    }
+
+    #[test]
+    fn claim_winnings_rejects_losing_position() {
+        let vm = TestVM::default();
+        let mut router = setup(&vm, addr(1));
+        vm.set_sender(addr(1));
+        // final = 1000; a YES at strike 2000 loses (final < strike).
+        router.set_final_price(I256::try_from(1000i64).unwrap()).unwrap();
+        vm.set_sender(addr(5));
+        assert_eq!(
+            router.claim_winnings(I256::try_from(2000i64).unwrap(), true).unwrap_err(),
+            b"PositionDidNotWin".to_vec()
+        );
+    }
+
+    #[test]
+    fn claim_winnings_winner_without_tokens_reverts() {
+        let vm = TestVM::default();
+        let mut router = setup(&vm, addr(1));
+        vm.set_sender(addr(1));
+        // final = 3000; a YES at strike 2000 wins (final >= strike) but holder has none.
+        router.set_final_price(I256::try_from(3000i64).unwrap()).unwrap();
+        vm.set_sender(addr(5));
+        assert_eq!(
+            router.claim_winnings(I256::try_from(2000i64).unwrap(), true).unwrap_err(),
+            b"NoWinningTokens".to_vec()
+        );
+    }
+
+    #[test]
+    fn release_losing_collateral_requires_resolution() {
+        let vm = TestVM::default();
+        let mut router = setup(&vm, addr(1));
+        assert_eq!(
+            router.release_losing_collateral(I256::ZERO, true).unwrap_err(),
+            b"MarketNotResolved".to_vec()
+        );
+    }
+
+    #[test]
+    fn release_losing_collateral_rejects_winning_position() {
+        let vm = TestVM::default();
+        let mut router = setup(&vm, addr(1));
+        vm.set_sender(addr(1));
+        // final = 3000; YES at 2000 is winning → cannot release.
+        router.set_final_price(I256::try_from(3000i64).unwrap()).unwrap();
+        assert_eq!(
+            router.release_losing_collateral(I256::try_from(2000i64).unwrap(), true).unwrap_err(),
+            b"Position is winning".to_vec()
+        );
+    }
+
+    #[test]
+    fn release_losing_collateral_calls_amm_for_loser() {
+        let vm = TestVM::default();
+        let mut router = setup(&vm, addr(1));
+        let strike = I256::try_from(2000i64).unwrap();
+        vm.set_sender(addr(1));
+        // final = 1000; YES at 2000 lost → router frees its collateral via the AMM.
+        router.set_final_price(I256::try_from(1000i64).unwrap()).unwrap();
+        let token_id = router.compute_token_id(strike, true).unwrap();
+        vm.mock_call(
+            addr(AMM),
+            releaseCollateralCall { token_id }.abi_encode(),
+            U256::ZERO,
+            Ok(alloc::vec![]),
+        );
+        vm.set_sender(addr(7)); // permissionless
+        router.release_losing_collateral(strike, true).unwrap();
+    }
+}
