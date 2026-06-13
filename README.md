@@ -25,19 +25,19 @@ The core of **OmniCurve** translates the continuous Gaussian distribution into a
 
 ## Addresses and the Transaction Hashes
 
-`Factory deployed at:` [0x61368ef9e767c8c24de1375b62ed3caafac10b0f](https://sepolia.arbiscan.io/address/0x61368ef9e767c8c24de1375b62ed3caafac10b0f)
+`Factory deployed at:` [0x9c8d052ff1f0e6419a6a323e86ffa893cb6ce817](https://sepolia.arbiscan.io/address/0x9c8d052ff1f0e6419a6a323e86ffa893cb6ce817)
 
-`AMM Implementation:` [0x0d08e6c457bfe0794b258e66c20a788cc8a8fa32](https://sepolia.arbiscan.io/address/0x0d08e6c457bfe0794b258e66c20a788cc8a8fa32)
+`AMM Implementation:` [0x56a2a3d3d5b50ff40f84188d1f975fedb819d882](https://sepolia.arbiscan.io/address/0x56a2a3d3d5b50ff40f84188d1f975fedb819d882)
 
-`Router Implementation:` [0x98846991e02802b20bf947cfe11b4ac6ff463d9f](https://sepolia.arbiscan.io/address/0x98846991e02802b20bf947cfe11b4ac6ff463d9f)
+`Router Implementation:` [0xa4ed547186b992eecd7244743577baf4c541ff9d](https://sepolia.arbiscan.io/address/0xa4ed547186b992eecd7244743577baf4c541ff9d)
 
-`LP Token Implementation:` [0xce5ce25964af3c917ebca5c972abec94022b868a](https://sepolia.arbiscan.io/address/0xce5ce25964af3c917ebca5c972abec94022b868a) 
+`LP Token Implementation:` [0x0e382e38342f28493568b98e5cab30348d6b2cab](https://sepolia.arbiscan.io/address/0x0e382e38342f28493568b98e5cab30348d6b2cab) 
 
-`Market #0 {ETH price @ 2026} AMM Proxy:` [0x9736E98CA898Bf69daA126e715Eb639D2DaBFb46](https://sepolia.arbiscan.io/address/0x9736E98CA898Bf69daA126e715Eb639D2DaBFb46)
+`Market #0 {ETH price @ 2026} AMM Proxy:` [0x982A774dd198a0F2E582aD0F3Ecc7348D2292d3b](https://sepolia.arbiscan.io/address/0x982A774dd198a0F2E582aD0F3Ecc7348D2292d3b)
 
-`Market #0 {ETH price @ 2026} Router Proxy:` [0xA65b5453a177d3C34654Ec4Be60754d0aD7ec6A5](https://sepolia.arbiscan.io/address/0xA65b5453a177d3C34654Ec4Be60754d0aD7ec6A5)
+`Market #0 {ETH price @ 2026} Router Proxy:` [0x7B863fA3e629258774f2C2DcF6419abf8F07D2D7](https://sepolia.arbiscan.io/address/0x7B863fA3e629258774f2C2DcF6419abf8F07D2D7)
 
-`Market #0 {ETH price @ 2026} LP Token Proxy:` [0x731489Ab2A0029a22a95b5Ea3f72335b18D40CCf](https://sepolia.arbiscan.io/address/0x731489Ab2A0029a22a95b5Ea3f72335b18D40CCf)
+`Market #0 {ETH price @ 2026} LP Token Proxy:` [0x86C7Ff5421c3aa48e0f7cFa4Ea0C6bbc668488E1](https://sepolia.arbiscan.io/address/0x86C7Ff5421c3aa48e0f7cFa4Ea0C6bbc668488E1)
 
 ## Table of Contents
 
@@ -467,13 +467,13 @@ cast send <AMM_PROXY> "setDistribution(int256,int256)" <MU_WAD> <SIGMA_WAD> \
 
 | Contract | Address |
 |----------|---------|
-| AMM Implementation | `0x0d08e6c457bfe0794b258e66c20a788cc8a8fa32` |
-| Router Implementation | `0x98846991e02802b20bf947cfe11b4ac6ff463d9f` |
-| LP Token Implementation | `0xce5ce25964af3c917ebca5c972abec94022b868a` |
-| Factory | `0x61368ef9e767c8c24de1375b62ed3caafac10b0f` |
-| Market #0 AMM Proxy | `0x9736E98CA898Bf69daA126e715Eb639D2DaBFb46` |
-| Market #0 Router Proxy | `0xA65b5453a177d3C34654Ec4Be60754d0aD7ec6A5` |
-| Market #0 LP Token Proxy | `0x731489Ab2A0029a22a95b5Ea3f72335b18D40CCf` |
+| AMM Implementation | `0x56a2a3d3d5b50ff40f84188d1f975fedb819d882` |
+| Router Implementation | `0xa4ed547186b992eecd7244743577baf4c541ff9d` |
+| LP Token Implementation | `0x0e382e38342f28493568b98e5cab30348d6b2cab` |
+| Factory | `0x9c8d052ff1f0e6419a6a323e86ffa893cb6ce817` |
+| Market #0 AMM Proxy | `0x982A774dd198a0F2E582aD0F3Ecc7348D2292d3b` |
+| Market #0 Router Proxy | `0x7B863fA3e629258774f2C2DcF6419abf8F07D2D7` |
+| Market #0 LP Token Proxy | `0x86C7Ff5421c3aa48e0f7cFa4Ea0C6bbc668488E1` |
 | USDC | `0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d` |
 
 ---

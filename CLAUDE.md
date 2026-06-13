@@ -309,25 +309,23 @@ All functions use I256 (signed 256-bit integer) with 18-decimal fixed-point (WAD
 
 ## Deployed Addresses (Arbitrum Sepolia)
 
-**Always derive proxy addresses at runtime via `Factory.getMarketAmm(id)` — never hardcode them.** The factory was re-initialized on 2026-06-12; old market proxy addresses in git history are stale.
+**Always derive proxy addresses at runtime via `Factory.getMarketAmm(id)` — never hardcode them.** The factory was re-initialized on 2026-06-14; old market proxy addresses in git history are stale.
 
 ### Implementation Contracts (singletons)
 | Contract | Address |
 |----------|---------|
-| AMM Implementation | `0x0d08e6c457bfe0794b258e66c20a788cc8a8fa32` |
-| Router Implementation | `0x98846991e02802b20bf947cfe11b4ac6ff463d9f` |
-| LP Token Implementation | `0xce5ce25964af3c917ebca5c972abec94022b868a` |
-| Factory | `0x61368ef9e767c8c24de1375b62ed3caafac10b0f` |
+| AMM Implementation | `0x56a2a3d3d5b50ff40f84188d1f975fedb819d882` |
+| Router Implementation | `0xa4ed547186b992eecd7244743577baf4c541ff9d` |
+| LP Token Implementation | `0x0e382e38342f28493568b98e5cab30348d6b2cab` |
+| Factory | `0x9c8d052ff1f0e6419a6a323e86ffa893cb6ce817` |
 
-### Live Markets (as of 2026-06-12)
+### Live Markets (as of 2026-06-14)
 | Market | AMM Proxy | Router Proxy | LP Token Proxy |
 |--------|-----------|--------------|----------------|
-| #0 "What will eth price be by the end of 2026?" | `0xfAE168427cA76FCE47ce5ACC59c8AF44Ff93b231` | `0xD1e1d1F6C90ADAA13177f371afDba06d90a41Ba4` | `0x42361261b5a2DF961Ee5728C2A15A970BBFd85F3` |
-| #1 (title set via PATCH /api/markets/1/metadata) | `0x7277f7008154d9a907bD8695f9A780D0F6D7958C` | `0x8eb3327417aC5035827Ad41CBc91769ee2c38336` | `0x99691cEbA7b40C5C3b9029ad37e059F137c4f303` |
+| #0 "What will eth price be by the end of 2026?" | `0x982A774dd198a0F2E582aD0F3Ecc7348D2292d3b` | `0x7B863fA3e629258774f2C2DcF6419abf8F07D2D7` | `0x86C7Ff5421c3aa48e0f7cFa4Ea0C6bbc668488E1` |
 
-**Creator wallet (MetaMask):** `0x747b0215e8fe4bd67062bcab5dc031eedbdfb70f`
-**Factory deployer:** `0x2154E13EC2399ebd6e81f9900389396Cfa760f98`
-**Both markets:** unseeded at creation (μ=0, σ=0, `sigma_min`=500 WAD). Creator must seed via the LP deposit flow before trading can begin.
+**Deployer / owner wallet:** `0x2154E13EC2399ebd6e81f9900389396Cfa760f98`
+**Market #0:** unseeded at creation (μ=0, σ=0, `sigma_min`=100000000000000000 WAD). Owner must seed via the LP deposit flow before trading can begin.
 
 ### Goldsky Subgraph
 - Endpoint: `https://api.goldsky.com/api/public/project_cmq17mffxi3ym01zj0wsd8eib/subgraphs/omnicurve-amm-arbitrum-sepolia/1.0.2/gn`

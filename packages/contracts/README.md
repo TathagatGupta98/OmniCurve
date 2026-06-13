@@ -2,29 +2,28 @@
 
 ## Deployed Addresses (Arbitrum Sepolia)
 
-> **Current deployment — stake-weighted-curve contracts (2026-06-09).** Bettors move μ/σ;
-> LPs are pure collateral. Verified on-chain (2 USDC YES bet moved μ 3500→3358.17; LP add
-> left μ unchanged).
+> **Current deployment — stake-weighted-curve contracts (2026-06-14).** Bettors move μ/σ;
+> LPs are pure collateral.
 
 ### Implementation Contracts (deployed once, shared by all markets)
 
 | Contract | Address |
 |----------|---------|
-| AMM Implementation | `0x0d08e6c457bfe0794b258e66c20a788cc8a8fa32` |
-| Router Implementation | `0x98846991e02802b20bf947cfe11b4ac6ff463d9f` |
-| LP Token Implementation | `0xce5ce25964af3c917ebca5c972abec94022b868a` (reused — unchanged) |
-| Factory | `0x61368ef9e767c8c24de1375b62ed3caafac10b0f` |
+| AMM Implementation | `0x56a2a3d3d5b50ff40f84188d1f975fedb819d882` |
+| Router Implementation | `0xa4ed547186b992eecd7244743577baf4c541ff9d` |
+| LP Token Implementation | `0x0e382e38342f28493568b98e5cab30348d6b2cab` |
+| Factory | `0x9c8d052ff1f0e6419a6a323e86ffa893cb6ce817` |
 
 ### Market #0 Proxy Contracts (deployed by factory) — "What will eth price be by the end of 2026?"
 
 | Contract | Address |
 |----------|---------|
-| AMM Proxy | `0x9736E98CA898Bf69daA126e715Eb639D2DaBFb46` |
-| Router Proxy | `0xA65b5453a177d3C34654Ec4Be60754d0aD7ec6A5` |
-| LP Token Proxy | `0x731489Ab2A0029a22a95b5Ea3f72335b18D40CCf` |
+| AMM Proxy | `0x982A774dd198a0F2E582aD0F3Ecc7348D2292d3b` |
+| Router Proxy | `0x7B863fA3e629258774f2C2DcF6419abf8F07D2D7` |
+| LP Token Proxy | `0x86C7Ff5421c3aa48e0f7cFa4Ea0C6bbc668488E1` |
 
-**Owner (AMM + Router):** `0xE958DaE545e5dAd0b4bE2E58432298dfd5178342`
-**LP Token Owner:** AMM Proxy (`0x9736E98CA898Bf69daA126e715Eb639D2DaBFb46`)
+**Owner (AMM + Router):** `0x2154E13EC2399ebd6e81f9900389396Cfa760f98`
+**LP Token Owner:** AMM Proxy (`0x982A774dd198a0F2E582aD0F3Ecc7348D2292d3b`)
 
 > Previous frozen-curve deployment (superseded): Factory `0xfd6df452d106c6bf5ee1cf6749d4d0afbacf40d9`,
 > AMM impl `0xbb3f4468928bc97e50c78c19688554a838d18906`, Router impl `0xae756b1e3d2eb887758f47545d91fdda8604677e`.
