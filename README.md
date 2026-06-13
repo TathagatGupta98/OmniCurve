@@ -9,7 +9,7 @@
 
 [![Built with Rust](https://img.shields.io/badge/Built%20with-Rust-orange?style=for-the-badge&logo=rust)](https://www.rust-lang.org/)
 [![Arbitrum Stylus](https://img.shields.io/badge/Arbitrum-Stylus-12AAFF?style=for-the-badge&logo=arbitrum)](https://docs.arbitrum.io/stylus/gentle-introduction)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](#10-project-license)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](#11-project-license)
 [![Network: Sepolia](https://img.shields.io/badge/Network-Arbitrum%20Sepolia-blue?style=for-the-badge)](https://sepolia.arbiscan.io/)
 
 [![Stack](https://img.shields.io/badge/Frontend-React%20%2B%20Vite%20%2B%20d3-61DAFB?style=flat-square&logo=react)](#)
@@ -63,15 +63,18 @@ The core of **OmniCurve** translates the continuous Gaussian distribution into a
 * [5. Product roadmap: from hackathon PoC to consumer trading platform](#5-product-roadmap-from-hackathon-poc-to-consumer-trading-platform)
 * [6. Contract-by-contract: math meets Rust](#6-contract-by-contract-math-meets-rust)
 * [7. Arbitrum Stylus & ecosystem best practices](#7-arbitrum-stylus--ecosystem-best-practices)
-* [8. Getting Started](#8-getting-started)
-  * [8.1 Prerequisites](#81-prerequisites)
-  * [8.2 Installation](#82-installation)
-  * [8.3 Building Contracts](#83-building-contracts)
-  * [8.4 Running the Backend](#84-running-the-backend)
-  * [8.5 Running the Frontend](#85-running-the-frontend)
-* [9. Deployment](#9-deployment)
-* [10. Project License](#10-project-license)
-* [11. References](#11-references)
+* [8. Future plans: an AI oracle for resolution](#8-future-plans-an-ai-oracle-for-resolution)
+  * [8.1 The resolution pipeline](#81-the-resolution-pipeline)
+  * [8.2 How it plugs into the existing contracts](#82-how-it-plugs-into-the-existing-contracts)
+* [9. Getting Started](#9-getting-started)
+  * [9.1 Prerequisites](#91-prerequisites)
+  * [9.2 Installation](#92-installation)
+  * [9.3 Building Contracts](#93-building-contracts)
+  * [9.4 Running the Backend](#94-running-the-backend)
+  * [9.5 Running the Frontend](#95-running-the-frontend)
+* [10. Deployment](#10-deployment)
+* [11. Project License](#11-project-license)
+* [12. References](#12-references)
 
 ---
 
@@ -757,11 +760,114 @@ asserting at the conversion layer).
 *timing* of resolution (only the *final price* itself is owner-supplied, which the
 README is upfront about as a hackathon simplification rather than a production design).
  
-## 8. Getting Started
+## 8. Future plans: an AI oracle for resolution
+
+Everything in Sections 6–7 is about getting *pricing* right and fully trustless on-chain.
+The one piece OmniCurve still resolves **manually** is the *outcome* itself: today the
+market owner calls `Router.set_final_price(final_price)` by hand (Section 1.4). That is an
+honest hackathon simplification — and it is also the single highest-leverage thing to
+remove before the protocol handles real capital. "The operator decides who wins" is
+acceptable for a PoC and unacceptable for a product.
+
+Our planned answer is **not** a single price feed and **not** a single large language
+model, but a **multi-agent AI oracle**, following Kota, *Design and Evaluation of
+Multi-Agent AI Oracle Systems for Prediction Market Resolution*
+([arXiv:2605.30802](https://arxiv.org/pdf/2605.30802)). The paper's central observation is
+that a lone model is a fragile oracle:
+
+> "Single AI models are prone to hallucinations, sycophancy, and systematic biases that
+> undermine oracle reliability."
+
+The remedy is redundancy and disagreement *by design* — a panel of architecturally
+diverse models that argue, vote with calibrated weights, and are explicitly allowed to
+**decline** when they are not sure:
+
+> "Multiple AI agents debate competing resolutions, exposing errors through adversarial
+> discussion."
+
+> "Agent predictions are aggregated using weighted voting schemes that account for
+> confidence calibration."
+
+> "Confidence thresholds enable oracles to abstain when uncertainty exceeds acceptable
+> bounds."
+
+The crux for OmniCurve is that this machinery has to produce exactly **one** thing: a
+single `final_price` (plus a calibrated confidence), or an **abstention** that quietly
+hands control back to the existing human-dispute path. The diversity, the debate, and the
+weighted vote all exist to make that one number trustworthy — and the model *monoculture*
+defense the paper stresses (uncorrelated architectures so failures don't line up) is what
+keeps the panel from confidently agreeing on the same wrong answer.
+
+### 8.1 The resolution pipeline
+
+The paper's pipeline maps cleanly onto OmniCurve's settlement, because settlement only
+ever needs that one output:
+
+```
+Question intake          market question + resolution criteria (off-chain metadata)
+        │                normalized into a single resolvable prompt
+        ▼
+Evidence gathering   ┌─ each agent independently retrieves sources and
+& verification       │  fact-checks them for credibility
+        │            └─ "validate information credibility through fact-checking"
+        ▼
+Multi-agent          ┌─ α  β  γ  δ   ← architecturally diverse models
+deliberation         │  └─ debate competing resolutions, surface each other's errors
+(adversarial debate) └─ "expose errors through adversarial discussion"
+        ▼
+Consensus            ┌─ confidence-weighted vote over agent verdicts
+aggregation          └─ → candidate final_price + aggregate confidence
+        ▼
+Confidence           ┌─ confidence ≥ τ ?  ── no ──▶ ABSTAIN (fall back to manual /
+thresholding         │                              24h dispute window)
+(selective abstain)  └─ yes ──▶ accept
+        ▼
+Resolution output ───▶ Router.set_final_price(final_price)
+                       (then the existing per-position settlement of Section 1.4)
+```
+
+| Stage | Paper term | What it does | OmniCurve binding |
+|:------|:-----------|:-------------|:------------------|
+| 1 | Question intake | Turns the market's question + resolution criteria into one normalized prompt | Sourced from the off-chain market metadata (`title`, resolution rule) |
+| 2 | Evidence gathering & verification | Each agent retrieves and credibility-checks sources independently | Off-chain; reduces single-source failure |
+| 3 | Multi-agent deliberation | Diverse models debate competing resolutions, exposing each other's errors | The redundancy + monoculture defense layer |
+| 4 | Consensus aggregation | Confidence-weighted vote → a single candidate `final_price` | Produces the one number settlement needs |
+| 5 | Confidence thresholding | Abstain if aggregate confidence < τ; otherwise accept | Maps to "don't resolve, dispute instead" |
+| 6 | Resolution output | Writes the accepted price on-chain | `Router.set_final_price` → Section 1.4 payout rules |
+
+### 8.2 How it plugs into the existing contracts
+
+Crucially, this is a change *around* the contracts, not *to* the pricing core. The
+two-phase resolution timelock (`propose_resolution` → 24h → `execute_resolution`,
+Section 2.6) was deliberately built so an oracle read can slot in where the manual
+`winning_id` is supplied today — the *timing* of resolution is already trustless
+on-chain, and only the *final price* is owner-supplied. Three properties make the
+integration low-risk:
+
+- **Settlement math is unchanged.** The oracle only ever supplies `final_price`; the
+  per-position rule (`final_price ≥ X` for YES, `< X` for NO, Section 1.4) and the
+  $1-per-winning-token payout stay exactly as they are. The AI never touches μ/σ or
+  pricing — belief and settlement remain cleanly separated.
+- **Abstention is a first-class outcome.** When the panel's aggregate confidence falls
+  below the threshold, the oracle writes nothing and the market simply remains in its
+  pre-resolution state, leaving the 24-hour timelock and human dispute path in control.
+  An uncertain oracle degrades to today's manual flow rather than guessing.
+- **The timelock *is* the dispute window.** Because `propose_resolution` already starts a
+  24h timer that anyone can inspect and the owner can `cancel_resolution` during, an
+  incorrect oracle resolution can be caught and cancelled before `execute_resolution`
+  finalizes it — the same safety rail the paper's confidence thresholding is designed to
+  complement.
+
+The animated walkthrough of this exact pipeline lives in the frontend protocol docs
+(`/docs`), where each stage of the paper's workflow is drawn and explained as you scroll.
+
+---
+
+## 9. Getting Started
 
 Follow these instructions to set up the project locally for development and testing.
 
-### 8.1 Prerequisites
+### 9.1 Prerequisites
 
 - **Rust** (1.88.0+) with `wasm32-unknown-unknown` target
 - **Cargo Stylus CLI** for contract deployment
@@ -769,7 +875,7 @@ Follow these instructions to set up the project locally for development and test
 - **PostgreSQL** for the backend database
 - **Foundry** (optional, for Solidity-based integration tests)
 
-### 8.2 Installation
+### 9.2 Installation
 
 Clone the repository and install all workspace dependencies:
 
@@ -779,7 +885,7 @@ cd OmniCurve
 pnpm install
 ```
 
-### 8.3 Building Contracts
+### 9.3 Building Contracts
 
 Each contract is compiled separately using Cargo feature flags, producing four WASM binaries from a single crate:
 
@@ -796,7 +902,7 @@ cargo build --target wasm32-unknown-unknown --features factory --release
 cargo test
 ```
 
-### 8.4 Running the Backend
+### 9.4 Running the Backend
 
 ```bash
 # Set up environment variables (see .env.example)
@@ -810,7 +916,7 @@ pnpm --filter @omnicurve/backend db:seed
 pnpm --filter @omnicurve/backend start:api
 ```
 
-### 8.5 Running the Frontend
+### 9.5 Running the Frontend
 
 ```bash
 # Start the Vite dev server
@@ -821,7 +927,7 @@ The frontend connects to the backend API at `localhost:3001` and to Arbitrum Sep
 
 ---
 
-## 9. Deployment
+## 10. Deployment
 
 ### Contract Deployment
 
@@ -885,13 +991,13 @@ cast send <AMM_PROXY> "setDistribution(int256,int256)" <MU_WAD> <SIGMA_WAD> \
 ---
 
 
-## 10. Project License
+## 11. Project License
 
 This project is licensed under the **MIT License**.
 
 ---
 
-## 11. References
+## 12. References
 
 - **Gaussian Distribution (Normal Distribution):** [Wikipedia — Normal Distribution](https://en.wikipedia.org/wiki/Normal_distribution)
 - **Abramowitz & Stegun Error Function Approximation:** Handbook of Mathematical Functions, Formula 7.1.26
@@ -900,3 +1006,4 @@ This project is licensed under the **MIT License**.
 - **MasterChef Fee Distribution Pattern:** [SushiSwap MasterChef](https://docs.sushi.com/)
 - **Distribution Market Design:** [Paradigm Distribution Market Research](https://www.paradigm.xyz/2024/12/distribution-markets)
 - **Prediction Market Design:** [Paradigm PM-AMM Research](https://www.paradigm.xyz/2024/11/pm-amm)
+- **Multi-Agent AI Oracle (planned resolution layer):** Tarun Kota, *Design and Evaluation of Multi-Agent AI Oracle Systems for Prediction Market Resolution* — [arXiv:2605.30802](https://arxiv.org/pdf/2605.30802)
