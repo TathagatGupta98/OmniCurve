@@ -328,4 +328,80 @@ mod tests {
         // sqrt(0) = 0
         assert_eq!(sqrt_wad(I256::ZERO), I256::ZERO);
     }
+
+    #[test]
+    fn test_sqrt_wad_negative_and_nonperfect() {
+        // Negative input is clamped to 0.
+        assert_eq!(sqrt_wad(wad_value(-1)), I256::ZERO);
+
+        // sqrt(2.0) ≈ 1.41421356
+        let two = wad_value(2_000_000_000_000_000_000);
+        let expected = wad_value(1_414_213_562_373_095_048);
+        let margin = wad_value(1_000_000_000_000_000); // 0.001
+        assert!(abs_i256(sqrt_wad(two) - expected) < margin, "sqrt(2) ≈ 1.41421, got {}", sqrt_wad(two));
+
+        // sqrt(100.0) = 10.0 (large-input branch).
+        let hundred = wad_value(100_000_000_000_000_000_000);
+        let ten = wad_value(10_000_000_000_000_000_000);
+        assert!(abs_i256(sqrt_wad(hundred) - ten) < margin, "sqrt(100) should be 10, got {}", sqrt_wad(hundred));
+    }
+
+    #[test]
+    fn test_exp_wad_extremes_and_negatives() {
+        // Saturates above +20 WAD rather than overflowing.
+        let big = wad_value(25_000_000_000_000_000_000); // 25.0
+        assert_eq!(exp_wad(big), I256::try_from(100_000_000_000_000_000_000_000_000i128).unwrap());
+
+        // Underflows to 0 below -20 WAD.
+        let small = wad_value(-25_000_000_000_000_000_000); // -25.0
+        assert_eq!(exp_wad(small), I256::ZERO);
+
+        // exp(1) ≈ 2.71828 (Taylor series within the valid range).
+        let e = exp_wad(wad());
+        let expected_e = wad_value(2_718_281_828_459_045_235);
+        let margin = wad_value(1_000_000_000_000_000); // 0.001
+        assert!(abs_i256(e - expected_e) < margin, "exp(1) ≈ 2.71828, got {}", e);
+
+        // exp(-1) ≈ 0.36788
+        let e_neg = exp_wad(wad_value(-1_000_000_000_000_000_000));
+        let expected = wad_value(367_879_441_171_442_321);
+        assert!(abs_i256(e_neg - expected) < margin, "exp(-1) ≈ 0.36788, got {}", e_neg);
+    }
+
+    #[test]
+    fn test_invalid_sigma_returns_zero() {
+        // Both PDF and CDF guard against non-positive sigma.
+        assert_eq!(normal_pdf(wad(), I256::ZERO, wad_value(-1)), I256::ZERO);
+        assert_eq!(normal_cdf(wad(), I256::ZERO, wad_value(-1)), I256::ZERO);
+        assert_eq!(normal_cdf(wad(), I256::ZERO, I256::ZERO), I256::ZERO);
+    }
+
+    #[test]
+    fn test_cdf_and_pdf_always_within_unit() {
+        // Sweep a range of strikes; outputs must stay in [0, 1 WAD].
+        let mu = wad();
+        let sigma = half_wad();
+        let step = wad_value(125_000_000_000_000_000); // 0.125
+        let mut x = mu - wad_value(2_000_000_000_000_000_000);
+        while x <= mu + wad_value(2_000_000_000_000_000_000) {
+            let cdf = normal_cdf(x, mu, sigma);
+            let pdf = normal_pdf(x, mu, sigma);
+            assert!(cdf >= I256::ZERO && cdf <= wad(), "cdf out of range at x={}: {}", x, cdf);
+            assert!(pdf >= I256::ZERO && pdf <= wad(), "pdf out of range at x={}: {}", x, pdf);
+            x += step;
+        }
+    }
+
+    #[test]
+    fn test_erf_is_odd_around_zero() {
+        // erf(-x) == -erf(x). Exercised through the CDF's symmetry:
+        // cdf(mu - d) + cdf(mu + d) ≈ 1 WAD.
+        let mu = I256::ZERO;
+        let sigma = wad();
+        let d = wad_value(700_000_000_000_000_000); // 0.7
+        let lo = normal_cdf(mu - d, mu, sigma);
+        let hi = normal_cdf(mu + d, mu, sigma);
+        let margin = wad_value(2_000_000_000_000_000); // 0.002
+        assert!(abs_i256((lo + hi) - wad()) < margin, "cdf symmetry broken: {} + {}", lo, hi);
+    }
 }

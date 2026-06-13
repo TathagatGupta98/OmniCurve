@@ -64,6 +64,50 @@ cargo build --target wasm32-unknown-unknown --features factory --release
 
 ---
 
+## Test Commands
+
+Unit tests live alongside each contract module (`#[cfg(test)]`) and run natively
+on the host via the Stylus `TestVM` harness. Because every contract is its own
+`#[entrypoint]`, only one contract module compiles per feature flag, so the
+suite is run once per feature:
+
+```bash
+cargo +stable test --lib --features amm        # distribution_amm + math_core
+cargo +stable test --lib --features router     # binary_router + math_core
+cargo +stable test --lib --features lp-token   # lp_token + math_core
+cargo +stable test --lib --features factory    # factory + math_core
+```
+
+> **Toolchain:** tests must be built with Rust **≥ 1.91** (e.g. `+stable`). The
+> WASM contracts themselves still build on the pinned `1.88.0` toolchain in
+> `rust-toolchain.toml`; only the dev-only `stylus-test` harness (and its alloy
+> provider dependencies) require the newer compiler. `stylus-test` is declared
+> under `[dev-dependencies]`, so it never enters the deployed WASM binary.
+
+What's covered:
+
+- **math_core** — WAD arithmetic, Gaussian PDF/CDF, `erf`, `exp_wad` saturation
+  bounds, `sqrt_wad`, unit-range clamping, invalid-σ guards.
+- **lp_token** — init/double-init, two-step ownership, owner-gated mint/burn,
+  overflow & insufficient-balance reverts, non-transferability.
+- **binary_router** — ownership, ERC-1155 surface (balances, approvals,
+  `safeTransferFrom`, `supportsInterface`), deterministic `token_id` derivation,
+  trade guards, a mocked happy-path buy, and the full settlement/claim/release
+  branch logic.
+- **distribution_amm** — ownership, parameter validation, `set_distribution`
+  curve seeding, the stake-weighted `underwrite_trade` curve recompute (exact μ),
+  the two-phase resolution timelock, collateral release, and fee distribution.
+- **factory** — EIP-1167 creation-code bytes, CREATE2 salt distinctness, and a
+  mocked `create_market` deploy/wire/record flow.
+
+Cross-contract calls are exercised with `TestVM` mocks. Note that this version
+of `TestVM` serves a single shared return-data buffer for all mocked calls (the
+most-recently-registered mock's bytes); the tests are written around that.
+
+The legacy Foundry mock tests remain runnable with `forge test`.
+
+---
+
 ## Initial Deployment
 
 Use the automated script or run manually:

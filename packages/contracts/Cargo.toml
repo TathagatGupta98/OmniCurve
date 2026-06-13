@@ -32,3 +32,7 @@ lp-token = []
 stylus-sdk = { version = "0.10.7", default-features = false }
 alloy-primitives = { version = "1.6.0" }
 alloy-sol-types = { version = "1.6.0" }
+
+[dev-dependencies]
+# Stylus unit-test harness (TestVM). Host-only; never compiled for wasm32.
+stylus-sdk = { version = "0.10.7", features = ["stylus-test"] }
